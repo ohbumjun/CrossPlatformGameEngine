@@ -1,5 +1,5 @@
 ﻿#include "hzpch.h"
-#include "DirectorySystem.h"
+#include "Hazel/FileSystem/DirectorySystem.h"
 #include "Hazel/Utils/StringUtil.h"
 
 char a_executablePath[2048] = { 0, };

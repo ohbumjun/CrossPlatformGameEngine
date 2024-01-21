@@ -1,6 +1,5 @@
 #include "hzpch.h"
-#include "ThreadUtil.h"
-#include "ThreadUtil.h"
+#include "Hazel/Core/Thread/ThreadUtil.h"
 
 const DWORD MS_VC_EXCEPTION = 0x406D1388;
 #pragma pack(push,8)  

@@ -1,6 +1,6 @@
 ﻿#include "hzpch.h"
-#include "Reflection.h"
-#include "TypeUtils.h"
+#include "Hazel/Core/Reflection/Reflection.h"
+#include "Hazel/Core/Reflection/TypeUtils.h"
 
 #pragma region >> field
 

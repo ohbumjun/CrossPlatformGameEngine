@@ -1,6 +1,6 @@
 ﻿#include "hzpch.h"
-#include "FileMemory.h"
-#include "DirectorySystem.h"
+#include "Hazel/FileSystem/DirectorySystem.h"
+#include "Hazel/FileSystem/FileMemory.h"
 
 FileMemory::FileMemory(HANDLE file) : 
 	m_FileHandle(file)
