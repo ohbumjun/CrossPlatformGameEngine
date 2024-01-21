@@ -110,7 +110,7 @@ HANDLE DirectorySystem::CreateFiile(const char* dest)
 	wchar_t wc[INIT_STR_LENGTH];
 	FromUTF8ToSystemPath((void*)wc, conv, true);
 
-	HANDLE newFileHandle = CreateFile(wc, GENERIC_READ | GENERIC_WRITE, 0, 
+	HANDLE newFileHandle = CreateFileW(wc, GENERIC_READ | GENERIC_WRITE, 0, 
 		nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
 
 	if (newFileHandle == INVALID_HANDLE)
@@ -180,7 +180,7 @@ HANDLE DirectorySystem::OpenFile(const char* path, FileAccessMode accessFlag, Fi
 
 	HANDLE fileHandle;
 
-	fileHandle = CreateFile(
+	fileHandle = CreateFileW(
 		wc,
 		desiredAccess, // 파일 또는 디바이스에 대한 요청된 액세스 권한으로, 읽기, 쓰기, 둘 다 또는 0
 		shareMode, // 열려 있는 각 핸들에 대한 공유 옵션. 즉, 해당 파일이 지금 이미 열려 있는데
@@ -210,7 +210,11 @@ HANDLE DirectorySystem::OpenFile(const char* path, FileAccessMode accessFlag, Fi
 		// 최대 대기 시간
 		size_t totalWaitTime = 0;
 
-		while ((fileHandle = CreateFile(wc, desiredAccess, shareMode, nullptr, disp,
+		while ((fileHandle = CreateFileW(wc,
+                                         desiredAccess,
+                                         shareMode,
+                                         nullptr,
+                                         disp,
 			attrs, nullptr)) == INVALID_HANDLE)
 		{
 			constexpr size_t maxWaitTime = 20000;
