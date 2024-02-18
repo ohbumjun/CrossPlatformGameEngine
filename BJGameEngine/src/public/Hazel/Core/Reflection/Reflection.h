@@ -121,7 +121,7 @@ public:
 	virtual void Serialize() {};
 };
 
-class Reflection
+class HAZEL_API Reflection
 {
 public :
 	// final : 더이상 상속하지 않는 마지막 class
