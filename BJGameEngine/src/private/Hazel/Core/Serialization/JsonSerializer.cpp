@@ -1,5 +1,5 @@
 ﻿#include  "hzpch.h"
-#include "JsonSerializer.h"
+#include "Hazel/Core/Serialization/JsonSerializer.h"
 #include "document.h"
 #include "writer.h"
 #include "Reader.h"
