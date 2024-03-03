@@ -87,7 +87,7 @@ void FileMemory::SerializeData(const void* ptr, size_t size)
 	DirectorySystem::WriteToFile(m_FileHandle, ptr, size);
 	//fwrite(ptr, size, 1, _file.handle);
 	m_Position += size;
-	m_Length = std::max(m_Position, static_cast<size_t>(m_Length + 1));
+    m_Length = std::max(m_Position, static_cast<size_t>(m_Length + 1));
 
 }
 
