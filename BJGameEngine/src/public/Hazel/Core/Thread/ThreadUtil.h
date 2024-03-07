@@ -1,136 +1,142 @@
-#pragma once
+ï»¿#pragma once
 
 #include <process.h>
 #include <thread>
 
 
 #define bj_WAIT_INFINITE (~(uint32)0)
-#define bj_WAIT_TIMEDOUT  1
+#define bj_WAIT_TIMEDOUT 1
 
 struct CRIC_SECT
 {
-	CRITICAL_SECTION handle;
-	// ¸ÖÆ¼¾²·¹µå È¯°æ¿¡¼­ ,°ªÀÌ ¾²·¹µå¿¡ ÀÇÇØ º¯ÇÒ ¼ö ÀÖÀ¸¹Ç·Î
-	// ÃÖÀûÈ­ x
-	volatile bool isInit;
+    CRITICAL_SECTION handle;
+    // ë©€í‹°ì“°ë ˆë“œ í™˜ê²½ì—ì„œ ,ê°’ì´ ì“°ë ˆë“œì— ì˜í•´ ë³€í•  ìˆ˜ ìˆìœ¼ë¯€ë¡œ
+    // ìµœì í™” x
+    volatile bool isInit;
 };
 
 struct Atomic
 {
-	Atomic() = default;
+    Atomic() = default;
 
-	Atomic(const Atomic& o);
+    Atomic(const Atomic &o);
 
-	int GetValue();
+    int GetValue();
 
-	volatile int value;
+    volatile int value;
 };
 
 typedef struct
 {
-// #if defined(__WIN32__)
-	CONDITION_VARIABLE handle;
-// #else
-	// pthread_cond_t handle;
-// #endif
+    // #if defined(__WIN32__)
+    CONDITION_VARIABLE handle;
+    // #else
+    // pthread_cond_t handle;
+    // #endif
 
 } ConditionVar;
 
 typedef struct
 {
-	// ex. ÃÊ±â°ª == 5
-	// ÇöÀç ¸î°³ÀÇ ¾²·¹µå°¡ signal °¡´ÉÇÑÁö. 
-	// Áï, ¿©ºĞ °³¼ö (signale µÉ ¶§¸¶´Ù --, relaese ÇÒ ¶§¸¶´Ù ++)
-	int count;
-// #if defined(__WIN32__)
-	HANDLE handle;
-// #elif defined(__APPLE__)
-// 	dispatch_semaphore_t handle;
-// #else
-	// sem_t  handle;
-// #endif
+    // ex. ì´ˆê¸°ê°’ == 5
+    // í˜„ì¬ ëª‡ê°œì˜ ì“°ë ˆë“œê°€ signal ê°€ëŠ¥í•œì§€.
+    // ì¦‰, ì—¬ë¶„ ê°œìˆ˜ (signale ë  ë•Œë§ˆë‹¤ --, relaese í•  ë•Œë§ˆë‹¤ ++)
+    int count;
+    // #if defined(__WIN32__)
+    HANDLE handle;
+    // #elif defined(__APPLE__)
+    // 	dispatch_semaphore_t handle;
+    // #else
+    // sem_t  handle;
+    // #endif
 
 } Semaphore;
 
 class SpinLock
 {
-	friend class ThreadUtils;
+    friend class ThreadUtils;
+
 public:
-	SpinLock();
-	void Init();
-	bool TryLock();
-	void Lock();
-	void Unlock();
-private :
-	Atomic flag;
+    SpinLock();
+    void Init();
+    bool TryLock();
+    void Lock();
+    void Unlock();
+
+private:
+    Atomic flag;
 };
 
 typedef struct
 {
-	char* name;
+    char *name;
 
-	unsigned long id;
+    unsigned long id;
 
-// #if defined(__WIN32__)
-	HANDLE handle;
-	//DWORD id;
-// #else
-	// pthread_t handle;
-	//pid_t id;
-// #endif
-	int stackSize;
+    // #if defined(__WIN32__)
+    HANDLE handle;
+    //DWORD id;
+    // #else
+    // pthread_t handle;
+    //pid_t id;
+    // #endif
+    int stackSize;
 
-	int affinity;
+    int affinity;
 
 } ThreadInfo;
 
 typedef enum
 {
-	RUNNING = 0,
-	BACKGROUND = 4,
-	UNSTARTED = 8,
-	STOPPED = 16,
-	WAIT_SLEEP_JOIN = 32,
-	SUSPENDED = 64,
-	ABORTED = 256,
-	WAIT = 512
+    RUNNING = 0,
+    BACKGROUND = 4,
+    UNSTARTED = 8,
+    STOPPED = 16,
+    WAIT_SLEEP_JOIN = 32,
+    SUSPENDED = 64,
+    ABORTED = 256,
+    WAIT = 512
 
 } ThreadState;
 
 typedef enum
 {
-	UNKNOWN = 0,
-	LOW = -2,
-	HIGH = 2,
+    UNKNOWN = 0,
+    LOW = -2,
+    HIGH = 2,
 
 } Threadbjiority;
 
 class ThreadUtils
 {
 public:
-	static void bj_thread_init(ThreadInfo* thread, void* (*thread_function)(void*), void* arg);
-	static void bj_thread_run(ThreadInfo* thread, void* (*thread_function)(void*), void* arg);
-	static bool bj_thread_join(ThreadInfo* thread, void* result);
+    static void bj_thread_init(ThreadInfo *thread,
+                               void *(*thread_function)(void *),
+                               void *arg);
+    static void bj_thread_run(ThreadInfo *thread,
+                              void *(*thread_function)(void *),
+                              void *arg);
+    static bool bj_thread_join(ThreadInfo *thread, void *result);
 
-	// Thread °¡ ÇÒÀÏÀ» ³¡³¾ ¶§±îÁö ±â´Ù¸° ´ÙÀ½ Thread ¸¦ Á¾·áÇÏ´Â ÇÔ¼ö
-	static void bj_thread_exit(ThreadInfo* thread, void* exitCode);
+    // Thread ê°€ í• ì¼ì„ ëë‚¼ ë•Œê¹Œì§€ ê¸°ë‹¤ë¦° ë‹¤ìŒ Thread ë¥¼ ì¢…ë£Œí•˜ëŠ” í•¨ìˆ˜
+    static void bj_thread_exit(ThreadInfo *thread, void *exitCode);
 
-	// Thread °¡ ÀÏÀ» ³¡³»´Â °Í°ú °ü°è¾øÀÌ °­Á¦·Î Á¾·áÇÏ´Â ÇÔ¼ö
-	static void bj_thread_kill(ThreadInfo* thread, void* exitCode);
+    // Thread ê°€ ì¼ì„ ëë‚´ëŠ” ê²ƒê³¼ ê´€ê³„ì—†ì´ ê°•ì œë¡œ ì¢…ë£Œí•˜ëŠ” í•¨ìˆ˜
+    static void bj_thread_kill(ThreadInfo *thread, void *exitCode);
 
-	static void bj_thread_set_priority(ThreadInfo* thread, int bjiority);
+    static void bj_thread_set_priority(ThreadInfo *thread, int bjiority);
 
-	/*
-	Affinity : Window È¯°æ¿¡¼­ bjocessor affinity ¶õ, thread °¡ ½ÇÇàµÉ ¼ö ÀÖ´Â
-	cpu core È¤Àº bjocessor ¸¦ °áÁ¤ÇÑ´Ù.
+    /*
+	Affinity : Window í™˜ê²½ì—ì„œ bjocessor affinity ë€, thread ê°€ ì‹¤í–‰ë  ìˆ˜ ìˆëŠ”
+	cpu core í˜¹ì€ bjocessor ë¥¼ ê²°ì •í•œë‹¤.
 
-	Affinity : bjocessor affinity mask ¸¦ ÀÇ¹Ì. mask ´Â bit mask ÀÌ´Ù.
-				mask ÀÇ °¢ bit ´Â Æ¯Á¤ cpu È¤Àº bjocessor ¿¡ ´ëÀÀµÈ´Ù.
-				mask ³» Æ¯Á¤ bit ¸¦ specify ÇÔÀ¸·Î½á, thread ¸¦ ½ÇÇà½ÃÅ³ cpu core ¸¦
-				control ÇÒ ¼ö ÀÕ´Ù.
+	Affinity : bjocessor affinity mask ë¥¼ ì˜ë¯¸. mask ëŠ” bit mask ì´ë‹¤.
+				mask ì˜ ê° bit ëŠ” íŠ¹ì • cpu í˜¹ì€ bjocessor ì— ëŒ€ì‘ëœë‹¤.
+				mask ë‚´ íŠ¹ì • bit ë¥¼ specify í•¨ìœ¼ë¡œì¨, thread ë¥¼ ì‹¤í–‰ì‹œí‚¬ cpu core ë¥¼
+				control í•  ìˆ˜ ì‡ë‹¤.
 	*/
-	/*
-	¿¹½Ã
+    /*
+	ì˜ˆì‹œ
 	int main() {
 		// Create and start a thread
 
@@ -148,19 +154,19 @@ public:
 		return 0;
 	}
 	*/
-	static void bj_thread_set_affinity(ThreadInfo* thread, int affinity);
-	static int  bj_current_thread_get_name(char* name);
-	static int  bj_thread_set_name(ThreadInfo* thread, const char* name);
-	static void bj_thread_sleep(unsigned long milliseconds);
+    static void bj_thread_set_affinity(ThreadInfo *thread, int affinity);
+    static int bj_current_thread_get_name(char *name);
+    static int bj_thread_set_name(ThreadInfo *thread, const char *name);
+    static void bj_thread_sleep(unsigned long milliseconds);
 
-	/*
-	ÇöÀç ¾²·¹µå ¿Ü¿¡, ´Ù¸¥ ¾²·¹µå Áß¿¡¼­ °°Àº / ´õ ³ôÀº bjiority ¸¦ °¡Áø ¾²·¹µå¸¦
-	½ÇÇàÇÏ°Ô ²û ¾çº¸½ÃÅ°´Â ? ÇÔ¼öÀÌ´Ù.
-	¸¸¾à, ÇöÀç ´ë±âÁßÀÎ ´Ù¸¥ ¾²·¹µå°¡ ¾ø´Ù¸é, °è¼ÓÇØ¼­ ÇöÀç ¾²·¹µå¸¦ ½ÇÇàÇÒ °ÍÀÌ´Ù.
-	ÀÇµµ : ÇÏ³ªÀÇ single thread °¡ Áö³ªÄ¡°Ô cpu »ç¿ë·®À» µ¶Á¡ÇÏ´Â °ÍÀ» ¹æÁöÇÏ±â À§ÇØ »ç¿ëÇÑ´Ù.
+    /*
+	í˜„ì¬ ì“°ë ˆë“œ ì™¸ì—, ë‹¤ë¥¸ ì“°ë ˆë“œ ì¤‘ì—ì„œ ê°™ì€ / ë” ë†’ì€ bjiority ë¥¼ ê°€ì§„ ì“°ë ˆë“œë¥¼
+	ì‹¤í–‰í•˜ê²Œ ë” ì–‘ë³´ì‹œí‚¤ëŠ” ? í•¨ìˆ˜ì´ë‹¤.
+	ë§Œì•½, í˜„ì¬ ëŒ€ê¸°ì¤‘ì¸ ë‹¤ë¥¸ ì“°ë ˆë“œê°€ ì—†ë‹¤ë©´, ê³„ì†í•´ì„œ í˜„ì¬ ì“°ë ˆë“œë¥¼ ì‹¤í–‰í•  ê²ƒì´ë‹¤.
+	ì˜ë„ : í•˜ë‚˜ì˜ single thread ê°€ ì§€ë‚˜ì¹˜ê²Œ cpu ì‚¬ìš©ëŸ‰ì„ ë…ì í•˜ëŠ” ê²ƒì„ ë°©ì§€í•˜ê¸° ìœ„í•´ ì‚¬ìš©í•œë‹¤.
 	*/
-	/*
-	¿¹½Ã
+    /*
+	ì˜ˆì‹œ
 
 	bool ThreadUtils::bj_thread_yield()
 	{
@@ -187,52 +193,56 @@ public:
 		return 0;
 	}
 	*/
-	static bool bj_thread_yield();
-	static size_t bj_thread_current_stack_limit();
-	static unsigned long bj_thread_get_current_id(void);
+    static bool bj_thread_yield();
+    static size_t bj_thread_current_stack_limit();
+    static unsigned long bj_thread_get_current_id(void);
 
-	/**
-	 @brief ¸ŞÀÎ ¾²·¹µå id¸¦ ¹İÈ¯ÇÕ´Ï´Ù. (¸ŞÀÎ ¾²·¹µå ³»¿¡¼­ 1È¸ È£Ãâ ÇÏ¿© ÃÊ±âÈ­ ÇÊ¿ä)
-	 @return ¾²·¹µå id
+    /**
+	 @brief ë©”ì¸ ì“°ë ˆë“œ idë¥¼ ë°˜í™˜í•©ë‹ˆë‹¤. (ë©”ì¸ ì“°ë ˆë“œ ë‚´ì—ì„œ 1íšŒ í˜¸ì¶œ í•˜ì—¬ ì´ˆê¸°í™” í•„ìš”)
+	 @return ì“°ë ˆë“œ id
 	*/
-	static unsigned long bj_main_thread_id();
-	static bool bj_is_current_main_thread();
-	static unsigned int bj_thread_get_hardware_count();
+    static unsigned long bj_main_thread_id();
+    static bool bj_is_current_main_thread();
+    static unsigned int bj_thread_get_hardware_count();
 
-	// Critical Section
-	static CRIC_SECT* bj_crit_sect_create();
-	static void bj_crit_sect_lock(CRIC_SECT* sect);
-	static bool bj_crit_sect_try_lock(CRIC_SECT* sect);
-	static void bj_crit_sect_unlock(CRIC_SECT* sect);
-	static void bj_crit_sect_destroy(CRIC_SECT* sect);
+    // Critical Section
+    static CRIC_SECT *bj_crit_sect_create();
+    static void bj_crit_sect_lock(CRIC_SECT *sect);
+    static bool bj_crit_sect_try_lock(CRIC_SECT *sect);
+    static void bj_crit_sect_unlock(CRIC_SECT *sect);
+    static void bj_crit_sect_destroy(CRIC_SECT *sect);
 
-	// SpinLock
-	static void bj_spin_init(SpinLock* spinlock);
-	static bool bj_spin_try_lock(SpinLock* spinlock);
-	static void bj_spin_lock(SpinLock* spinlock);
-	static void bj_spin_unlock(SpinLock* spinlock);
+    // SpinLock
+    static void bj_spin_init(SpinLock *spinlock);
+    static bool bj_spin_try_lock(SpinLock *spinlock);
+    static void bj_spin_lock(SpinLock *spinlock);
+    static void bj_spin_unlock(SpinLock *spinlock);
 
-	// Atomic
-	static int  bj_atomic_set(Atomic* a, int val);
-	static int  bj_atomic_get(Atomic* a);
-	static int  bj_atomic_add(Atomic* a, int v);
-	static int  bj_atomic_increase(Atomic* a);
-	static int  bj_atomic_decrease(Atomic* a);
-	static bool bj_atomic_compare_and_swap(Atomic* atomic, int oldVal, int newVal);
+    // Atomic
+    static int bj_atomic_set(Atomic *a, int val);
+    static int bj_atomic_get(Atomic *a);
+    static int bj_atomic_add(Atomic *a, int v);
+    static int bj_atomic_increase(Atomic *a);
+    static int bj_atomic_decrease(Atomic *a);
+    static bool bj_atomic_compare_and_swap(Atomic *atomic,
+                                           int oldVal,
+                                           int newVal);
 
-	// Condition
-// https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-initializeconditionvariable
-	static ConditionVar* bj_condition_create();
-	static void bj_condition_destroy(ConditionVar* condition);
-	static bool bj_condition_wait(ConditionVar* con, CRIC_SECT* mutex, uint32 time);
-	static void bj_condition_notify_one(ConditionVar* con);
-	static void bj_condition_notify_all(ConditionVar* con);
+    // Condition
+    // https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-initializeconditionvariable
+    static ConditionVar *bj_condition_create();
+    static void bj_condition_destroy(ConditionVar *condition);
+    static bool bj_condition_wait(ConditionVar *con,
+                                  CRIC_SECT *mutex,
+                                  uint32 time);
+    static void bj_condition_notify_one(ConditionVar *con);
+    static void bj_condition_notify_all(ConditionVar *con);
 
 
-	// Semaphore
-	static Semaphore* bj_semaphore_create(int init_value);
-	static void bj_semaphore_destroy(Semaphore* sema);
-	static int bj_semaphore_signal(Semaphore* sema);   // Semaphore ÀÌ¿ëÇØ¼­ lock °Å´Â ÇÔ¼ö
-	static int bj_semaphore_wait(Semaphore* sema, int timeout);
+    // Semaphore
+    static Semaphore *bj_semaphore_create(int init_value);
+    static void bj_semaphore_destroy(Semaphore *sema);
+    static int bj_semaphore_signal(
+        Semaphore *sema); // Semaphore ì´ìš©í•´ì„œ lock ê±°ëŠ” í•¨ìˆ˜
+    static int bj_semaphore_wait(Semaphore *sema, int timeout);
 };
-

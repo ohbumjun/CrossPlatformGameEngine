@@ -1,147 +1,163 @@
-#pragma once
+Ôªø#pragma once
 
-#include <string>
 #include "Hazel/Scene/Entity.h"
 #include <glm/glm.hpp>
 #include <imgui.h>
+#include <string>
 
-namespace HazelEditor {
+namespace HazelEditor
+{
 
-	static void DrawVec3Control(const std::string& lable, glm::vec3& values,
-		float resetValues = 0.0f, float columnWidth = 100.f)
-	{
-		ImGuiIO& io = ImGui::GetIO();
-		auto boldFont = io.Fonts->Fonts[1];
-
-
-		ImGui::PushID(lable.c_str());
-
-		ImGui::Columns(2);
-		ImGui::SetColumnWidth(0, columnWidth);
-		ImGui::Text(lable.c_str());
-		ImGui::NextColumn();
-
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 1.f, 0 });
-
-		// ImGui::PushItemWidth(3, ImGui::CalcItemWidth());
-		// float lineHeight = ImGui::GetTextLineHeightWithSpacing();
-		float lineHeight = ImGui::GetFontSize() + 2.f * ImGui::GetStyle().FramePadding.y;
-		ImVec2 buttonSize = { lineHeight + 2.f, lineHeight };
-
-		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.1f, 0.15f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.3f, 0.15f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.8f, 0.5f, 0.15f, 1.0f));
-
-		ImGui::PushFont(boldFont);
-		if (ImGui::Button("X", buttonSize)) {
-			values.x = resetValues;
-		}
-		ImGui::PopFont();
-		ImGui::PopStyleColor(3);
-
-		ImGui::SameLine();
-		// ImGui::PushItemWidth(lineHeight * 4.0f); // Adjust the width as needed
-		ImGui::PushItemWidth(lineHeight * 2.0f); // Adjust the width as needed
-		ImGui::DragFloat("##X", &values.x, 0.1f);
-		ImGui::PopItemWidth();
-		ImGui::SameLine();
-
-		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, 0.8f, 0.15f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.1f, 0.8f, 0.3f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.1f, 0.7f, 0.5f, 1.0f));
-
-		ImGui::PushFont(boldFont);
-		if (ImGui::Button("Y", buttonSize)) {
-			values.y = resetValues;
-		}
-		ImGui::PopFont();
-		ImGui::PopStyleColor(3);
-
-		ImGui::SameLine();
-		ImGui::PushItemWidth(lineHeight * 2.0f); // Adjust the width as needed
-		ImGui::DragFloat("##Y", &values.y, 0.1f);
-		ImGui::PopItemWidth();
-		ImGui::SameLine();
+static void DrawVec3Control(const std::string &lable,
+                            glm::vec3 &values,
+                            float resetValues = 0.0f,
+                            float columnWidth = 100.f)
+{
+    ImGuiIO &io = ImGui::GetIO();
+    auto boldFont = io.Fonts->Fonts[1];
 
 
-		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, 0.1f, 0.8f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.1f, 0.8f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.5f, 0.1f, 0.8f, 1.0f));
+    ImGui::PushID(lable.c_str());
 
-		ImGui::PushFont(boldFont);
-		if (ImGui::Button("Z", buttonSize)) {
-			values.z = resetValues;
-		}
-		ImGui::PopFont();
-		ImGui::PopStyleColor(3);
+    ImGui::Columns(2);
+    ImGui::SetColumnWidth(0, columnWidth);
+    ImGui::Text(lable.c_str());
+    ImGui::NextColumn();
 
-		ImGui::SameLine();
-		ImGui::PushItemWidth(lineHeight * 2.0f); // Adjust the width as needed
-		ImGui::DragFloat("##Z", &values.z, 0.1f);
-		ImGui::PopItemWidth();
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{1.f, 0});
 
-		ImGui::PopStyleVar();
+    // ImGui::PushItemWidth(3, ImGui::CalcItemWidth());
+    // float lineHeight = ImGui::GetTextLineHeightWithSpacing();
+    float lineHeight =
+        ImGui::GetFontSize() + 2.f * ImGui::GetStyle().FramePadding.y;
+    ImVec2 buttonSize = {lineHeight + 2.f, lineHeight};
 
-		ImGui::Columns(1);
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.1f, 0.15f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
+                          ImVec4(0.8f, 0.3f, 0.15f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive,
+                          ImVec4(0.8f, 0.5f, 0.15f, 1.0f));
 
-		ImGui::PopID();
-	}
-	template<typename T, typename UFunction>
-	static void DrawComponent(const std::string& name, Hazel::Entity entity, UFunction uFunc)
-	{
-		// const ImGuiTreeNodeFlags treeNodeFlag = ImGuiTreeNodeFlags_DefaultOpen |
-		const ImGuiTreeNodeFlags treeNodeFlag =
-			ImGuiTreeNodeFlags_AllowItemOverlap |
-			ImGuiTreeNodeFlags_Framed |
-			ImGuiTreeNodeFlags_FramePadding;
+    ImGui::PushFont(boldFont);
+    if (ImGui::Button("X", buttonSize))
+    {
+        values.x = resetValues;
+    }
+    ImGui::PopFont();
+    ImGui::PopStyleColor(3);
 
-		float lineHeight = ImGui::GetFontSize() + 2.f * ImGui::GetStyle().FramePadding.y;
-		ImVec2 buttonSize = { lineHeight, lineHeight };
+    ImGui::SameLine();
+    // ImGui::PushItemWidth(lineHeight * 4.0f); // Adjust the width as needed
+    ImGui::PushItemWidth(lineHeight * 2.0f); // Adjust the width as needed
+    ImGui::DragFloat("##X", &values.x, 0.1f);
+    ImGui::PopItemWidth();
+    ImGui::SameLine();
 
-		if (entity.HasComponent<T>())
-		{
-			// transform ¡∂¡§
-			auto& component = entity.GetComponent<T>();
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, 0.8f, 0.15f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
+                          ImVec4(0.1f, 0.8f, 0.3f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive,
+                          ImVec4(0.1f, 0.7f, 0.5f, 1.0f));
 
-			ImVec2 contentRegion = ImGui::GetContentRegionAvail();
+    ImGui::PushFont(boldFont);
+    if (ImGui::Button("Y", buttonSize))
+    {
+        values.y = resetValues;
+    }
+    ImGui::PopFont();
+    ImGui::PopStyleColor(3);
 
-			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 2.f, 2.f });
+    ImGui::SameLine();
+    ImGui::PushItemWidth(lineHeight * 2.0f); // Adjust the width as needed
+    ImGui::DragFloat("##Y", &values.y, 0.1f);
+    ImGui::PopItemWidth();
+    ImGui::SameLine();
 
-			ImGui::Separator();
 
-			// «ÿ¥Á øµø™¿ª º±≈√«ÿº≠ ø≠æÓæﬂ∏∏ ¡∂¡§ ∞°¥…«œ¥Ÿ
-			bool opened = ImGui::TreeNodeEx((void*)typeid(T).hash_code(),
-				treeNodeFlag, name.c_str());
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, 0.1f, 0.8f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
+                          ImVec4(0.3f, 0.1f, 0.8f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive,
+                          ImVec4(0.5f, 0.1f, 0.8f, 1.0f));
 
-			ImGui::SameLine(contentRegion.x - lineHeight * 0.5f);
+    ImGui::PushFont(boldFont);
+    if (ImGui::Button("Z", buttonSize))
+    {
+        values.z = resetValues;
+    }
+    ImGui::PopFont();
+    ImGui::PopStyleColor(3);
 
-			bool removeComponent = false;
+    ImGui::SameLine();
+    ImGui::PushItemWidth(lineHeight * 2.0f); // Adjust the width as needed
+    ImGui::DragFloat("##Z", &values.z, 0.1f);
+    ImGui::PopItemWidth();
 
-			if (ImGui::Button("+", buttonSize))
-				ImGui::OpenPopup("ComponentSettings");
+    ImGui::PopStyleVar();
 
-			ImGui::PopStyleVar();
+    ImGui::Columns(1);
 
-			if (ImGui::BeginPopup("ComponentSettings"))
-			{
-				if (ImGui::MenuItem("Remove Component"))
-					removeComponent = true;
-
-				ImGui::EndPopup();
-			}
-
-			if (opened)
-			{
-				uFunc(component);
-
-				ImGui::TreePop();
-			}
-
-			if (removeComponent)
-			{
-				entity.RemoveComponent<T>();
-			}
-		}
-	}
-
+    ImGui::PopID();
 }
+template <typename T, typename UFunction>
+static void DrawComponent(const std::string &name,
+                          Hazel::Entity entity,
+                          UFunction uFunc)
+{
+    // const ImGuiTreeNodeFlags treeNodeFlag = ImGuiTreeNodeFlags_DefaultOpen |
+    const ImGuiTreeNodeFlags treeNodeFlag =
+        ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_Framed |
+        ImGuiTreeNodeFlags_FramePadding;
+
+    float lineHeight =
+        ImGui::GetFontSize() + 2.f * ImGui::GetStyle().FramePadding.y;
+    ImVec2 buttonSize = {lineHeight, lineHeight};
+
+    if (entity.HasComponent<T>())
+    {
+        // transform Ï°∞Ï†ï
+        auto &component = entity.GetComponent<T>();
+
+        ImVec2 contentRegion = ImGui::GetContentRegionAvail();
+
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{2.f, 2.f});
+
+        ImGui::Separator();
+
+        // Ìï¥Îãπ ÏòÅÏó≠ÏùÑ ÏÑ†ÌÉùÌï¥ÏÑú Ïó¥Ïñ¥ÏïºÎßå Ï°∞Ï†ï Í∞ÄÎä•ÌïòÎã§
+        bool opened = ImGui::TreeNodeEx((void *)typeid(T).hash_code(),
+                                        treeNodeFlag,
+                                        name.c_str());
+
+        ImGui::SameLine(contentRegion.x - lineHeight * 0.5f);
+
+        bool removeComponent = false;
+
+        if (ImGui::Button("+", buttonSize))
+            ImGui::OpenPopup("ComponentSettings");
+
+        ImGui::PopStyleVar();
+
+        if (ImGui::BeginPopup("ComponentSettings"))
+        {
+            if (ImGui::MenuItem("Remove Component"))
+                removeComponent = true;
+
+            ImGui::EndPopup();
+        }
+
+        if (opened)
+        {
+            uFunc(component);
+
+            ImGui::TreePop();
+        }
+
+        if (removeComponent)
+        {
+            entity.RemoveComponent<T>();
+        }
+    }
+}
+
+} // namespace HazelEditor

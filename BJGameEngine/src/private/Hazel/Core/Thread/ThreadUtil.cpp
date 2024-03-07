@@ -1,594 +1,632 @@
+ï»¿#include "Hazel/Core/Thread/ThreadUtil.h"
 #include "hzpch.h"
-#include "Hazel/Core/Thread/ThreadUtil.h"
 
 const DWORD MS_VC_EXCEPTION = 0x406D1388;
-#pragma pack(push,8)  
+#pragma pack(push, 8)
 typedef struct tagTHREADNAME_INFO
 {
-	DWORD dwType; // Must be 0x1000.  
-	LPCSTR szName; // Pointer to name (in user addr space).  
-	DWORD dwThreadID; // Thread ID (-1=caller thread).  
-	DWORD dwFlags; // Reserved for future use, must be zero.  
+    DWORD dwType;     // Must be 0x1000.
+    LPCSTR szName;    // Pointer to name (in user addr space).
+    DWORD dwThreadID; // Thread ID (-1=caller thread).
+    DWORD dwFlags;    // Reserved for future use, must be zero.
 } THREADNAME_INFO;
 #pragma pack(pop)
 
-static void get_last_error_message(const wchar_t* buf, size_t size)
+static void get_last_error_message(const wchar_t *buf, size_t size)
 {
-	//wchar_t buf[256];
-	FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-		NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		(wchar_t*)buf, (DWORD)size, NULL);
+    //wchar_t buf[256];
+    FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                   NULL,
+                   GetLastError(),
+                   MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                   (wchar_t *)buf,
+                   (DWORD)size,
+                   NULL);
 
-	wchar_t* ptr = (wchar_t*)buf;
-	while (*ptr)
-	{
-		if (*ptr == '\r')
-		{
-			*ptr = 0x0000;
-			break;
-		}
-		ptr++;
-	}
+    wchar_t *ptr = (wchar_t *)buf;
+    while (*ptr)
+    {
+        if (*ptr == '\r')
+        {
+            *ptr = 0x0000;
+            break;
+        }
+        ptr++;
+    }
 }
 
-Atomic::Atomic(const Atomic& o)
-{
+Atomic::Atomic(const Atomic &o){
 
 };
 
 int Atomic::GetValue()
 {
-	return value;
+    return value;
 };
 
-void ThreadUtils::bj_thread_init(ThreadInfo* thread, void* (*thread_function)(void*), void* arg)
+void ThreadUtils::bj_thread_init(ThreadInfo *thread,
+                                 void *(*thread_function)(void *),
+                                 void *arg)
 {
 }
 
-void ThreadUtils::bj_thread_run(ThreadInfo* thread, void* (*thread_function)(void*), void* arg)
+void ThreadUtils::bj_thread_run(ThreadInfo *thread,
+                                void *(*thread_function)(void *),
+                                void *arg)
 {
-	// ½ÇÁ¦ thread ¸¦ ¸¸µé¾î¼­ os ·ÎºÎÅÍ handle °ªÀ» ¸®ÅÏ¹Ş´Â´Ù.
-	thread->handle = (HANDLE)_beginthreadex(
-		NULL,                   // default security attributes
-		0,						// use default stack Size  
-		reinterpret_cast<unsigned(__stdcall*)(void*)>(thread_function), // Cast to correct signature
-		arg,					// argument to thread function 
-		0,                      // use default creation flags 
-		(unsigned int*)&thread->id);			// returns the thread identifier 
+    // ì‹¤ì œ thread ë¥¼ ë§Œë“¤ì–´ì„œ os ë¡œë¶€í„° handle ê°’ì„ ë¦¬í„´ë°›ëŠ”ë‹¤.
+    thread->handle = (HANDLE)_beginthreadex(
+        NULL, // default security attributes
+        0,    // use default stack Size
+        reinterpret_cast<unsigned(__stdcall *)(void *)>(
+            thread_function),         // Cast to correct signature
+        arg,                          // argument to thread function
+        0,                            // use default creation flags
+        (unsigned int *)&thread->id); // returns the thread identifier
 
-	// À§ÀÇ ÇÔ¼ö´Â »õ·Î¿î thread ¸¦ ¸¸µå´Â ¿ªÇÒÀ» ÇÑ´Ù.
-	// ¹Ù·Î thread °¡ call back function À» ½ÇÇàÇÏµµ·Ï ÇÏÁö´Â ¾Ê´Â´Ù. ¾²·¹µå°¡ ÀÏÀ» ÁøÇàÇÏ°Ô ÇÒÁö ¸»Áö´Â
-	// ¿î¿µÃ¼Á¦ (´õ ±¸Ã¼ÀûÀ¸·Î´Â ½ºÄÉÁÙ·¯)ÀÇ ¿ªÇÒÀÌ±â ¶§¹®ÀÌ´Ù.
+    // ìœ„ì˜ í•¨ìˆ˜ëŠ” ìƒˆë¡œìš´ thread ë¥¼ ë§Œë“œëŠ” ì—­í• ì„ í•œë‹¤.
+    // ë°”ë¡œ thread ê°€ call back function ì„ ì‹¤í–‰í•˜ë„ë¡ í•˜ì§€ëŠ” ì•ŠëŠ”ë‹¤. ì“°ë ˆë“œê°€ ì¼ì„ ì§„í–‰í•˜ê²Œ í• ì§€ ë§ì§€ëŠ”
+    // ìš´ì˜ì²´ì œ (ë” êµ¬ì²´ì ìœ¼ë¡œëŠ” ìŠ¤ì¼€ì¤„ëŸ¬)ì˜ ì—­í• ì´ê¸° ë•Œë¬¸ì´ë‹¤.
 
-	if (thread->handle == INVALID_HANDLE_VALUE)
-	{
-		wchar_t buf[256];
-		get_last_error_message(buf, sizeof(buf));
+    if (thread->handle == INVALID_HANDLE_VALUE)
+    {
+        wchar_t buf[256];
+        get_last_error_message(buf, sizeof(buf));
 
-		THROW("lv_thread_run is failed %ls", buf);
-	}
-	else
-	{
-		// https://docs.microsoft.com/ko-kr/previous-versions/visualstudio/visual-studio-2015/debugger/how-to-set-a-thread-name-in-native-code?view=vs-2015&redirectedfrom=MSDN
-		THREADNAME_INFO info;
-		info.dwType = 0x1000;
-		info.szName = thread->name;
-		info.dwThreadID = thread->id;
-		info.dwFlags = 0;
-#pragma warning(push)  
-#pragma warning(disable: 6320 6322)  
-		__try {
-			RaiseException(MS_VC_EXCEPTION, 0, sizeof(info) / sizeof(ULONG_PTR), (ULONG_PTR*)&info);
-		}
-		__except (EXCEPTION_EXECUTE_HANDLER) {
-		}
-#pragma warning(pop)  
-	}
+        THROW("lv_thread_run is failed %ls", buf);
+    }
+    else
+    {
+        // https://docs.microsoft.com/ko-kr/previous-versions/visualstudio/visual-studio-2015/debugger/how-to-set-a-thread-name-in-native-code?view=vs-2015&redirectedfrom=MSDN
+        THREADNAME_INFO info;
+        info.dwType = 0x1000;
+        info.szName = thread->name;
+        info.dwThreadID = thread->id;
+        info.dwFlags = 0;
+#pragma warning(push)
+#pragma warning(disable : 6320 6322)
+        __try
+        {
+            RaiseException(MS_VC_EXCEPTION,
+                           0,
+                           sizeof(info) / sizeof(ULONG_PTR),
+                           (ULONG_PTR *)&info);
+        }
+        __except (EXCEPTION_EXECUTE_HANDLER)
+        {
+        }
+#pragma warning(pop)
+    }
 }
 
-bool ThreadUtils::bj_thread_join(ThreadInfo* thread, void* result)
+bool ThreadUtils::bj_thread_join(ThreadInfo *thread, void *result)
 {
-	/*
+    /*
 	 "joining" a thread refers to the process of waiting for a specific thread to finish its execution
 	 before continuing with the execution
 	*/
-	if (thread == NULL)
-	{
-		THROW("LvThread is null");
-		return false;
-	}
+    if (thread == NULL)
+    {
+        THROW("LvThread is null");
+        return false;
+    }
 
-	if (thread->handle == NULL)
-	{
-		THROW("LvThread is null");
-		return false;
-	}
+    if (thread->handle == NULL)
+    {
+        THROW("LvThread is null");
+        return false;
+    }
 
-	if (thread->handle != NULL)
-	{
-		/*
-		- ÇØ´ç ¾²·¹µå°¡ signaled »óÅÂ°¡ µÉ ¶§±îÁö ±â´Ù¸°´Ù.
-		  SleepConditionVariableCS  ÀÇ Â÷ÀÌÁ¡Àº, SleepConditionVariableCS  ÇÔ¼ö´Â Æ¯Á¤ Á¶°ÇÀÌ ¸¸Á·ÇÒ ¶§±îÁö wait ÇÏ°Ô ÇÏ´Â °ÍÀÌ¶ó¸é
-		  WaitForSingleObjectEx ´Â º¸´Ù general ÇÑ ¸ñÀûÀ¸·Î, Æ¯Á¤ Á¶°Ç¿¡ ÇÑÁ¤µÈ °ÍÀº ¾Æ´Ï¶ó´Â Á¡¿¡¼­ Â÷ÀÌ°¡ ÀÖ´Ù.
+    if (thread->handle != NULL)
+    {
+        /*
+		- í•´ë‹¹ ì“°ë ˆë“œê°€ signaled ìƒíƒœê°€ ë  ë•Œê¹Œì§€ ê¸°ë‹¤ë¦°ë‹¤.
+		  SleepConditionVariableCS  ì˜ ì°¨ì´ì ì€, SleepConditionVariableCS  í•¨ìˆ˜ëŠ” íŠ¹ì • ì¡°ê±´ì´ ë§Œì¡±í•  ë•Œê¹Œì§€ wait í•˜ê²Œ í•˜ëŠ” ê²ƒì´ë¼ë©´
+		  WaitForSingleObjectEx ëŠ” ë³´ë‹¤ general í•œ ëª©ì ìœ¼ë¡œ, íŠ¹ì • ì¡°ê±´ì— í•œì •ëœ ê²ƒì€ ì•„ë‹ˆë¼ëŠ” ì ì—ì„œ ì°¨ì´ê°€ ìˆë‹¤.
 		*/
-		WaitForSingleObjectEx(thread->handle, INFINITE, FALSE);
-	}
-	return true;
+        WaitForSingleObjectEx(thread->handle, INFINITE, FALSE);
+    }
+    return true;
 }
 
-void ThreadUtils::bj_thread_exit(ThreadInfo* thread, void* exitCode)
+void ThreadUtils::bj_thread_exit(ThreadInfo *thread, void *exitCode)
 {
-	if (thread == NULL)
-	{
-		THROW("LvThread is null");
-	}
+    if (thread == NULL)
+    {
+        THROW("LvThread is null");
+    }
 
-	if (thread->handle == NULL)
-	{
-		THROW("LvThread is null");
-	}
+    if (thread->handle == NULL)
+    {
+        THROW("LvThread is null");
+    }
 
-	CloseHandle(thread->handle);
+    CloseHandle(thread->handle);
 
-	if (GetExitCodeThread(thread->handle, (LPDWORD)exitCode))
-	{
-		wchar_t buf[256];
-		get_last_error_message(buf, sizeof(buf));
-		THROW("TerminateThread Error Code %ls", buf);
-		//LV_THROW("TerminateThread Error Code %d", GetLastError());
-	}
+    if (GetExitCodeThread(thread->handle, (LPDWORD)exitCode))
+    {
+        wchar_t buf[256];
+        get_last_error_message(buf, sizeof(buf));
+        THROW("TerminateThread Error Code %ls", buf);
+        //LV_THROW("TerminateThread Error Code %d", GetLastError());
+    }
 
-	thread->handle = NULL;
+    thread->handle = NULL;
 }
 
-void ThreadUtils::bj_thread_kill(ThreadInfo* thread, void* exitCode)
+void ThreadUtils::bj_thread_kill(ThreadInfo *thread, void *exitCode)
 {
-	if (TerminateThread(thread->handle, (DWORD)exitCode) == false)
-	{
-		wchar_t buf[256];
-		get_last_error_message(buf, sizeof(buf));
-		THROW("TerminateThread Error Code %ls", buf);
-	}
+    if (TerminateThread(thread->handle, (DWORD)exitCode) == false)
+    {
+        wchar_t buf[256];
+        get_last_error_message(buf, sizeof(buf));
+        THROW("TerminateThread Error Code %ls", buf);
+    }
 }
 
-void ThreadUtils::bj_thread_set_priority(ThreadInfo* thread, int priority)
+void ThreadUtils::bj_thread_set_priority(ThreadInfo *thread, int priority)
 {
-	// In Windows, thread priorities range from THREAD_PRIORITY_IDLE(lowest) to THREAD_PRIORITY_TIME_CRITICAL(highest).
-	SetThreadPriority(thread->handle, priority);
+    // In Windows, thread priorities range from THREAD_PRIORITY_IDLE(lowest) to THREAD_PRIORITY_TIME_CRITICAL(highest).
+    SetThreadPriority(thread->handle, priority);
 }
 
-void ThreadUtils::bj_thread_set_affinity(ThreadInfo* thread, int affinity)
+void ThreadUtils::bj_thread_set_affinity(ThreadInfo *thread, int affinity)
 {
-	if (thread == NULL)
-	{
-		THROW("LvThread is null");
-	}
+    if (thread == NULL)
+    {
+        THROW("LvThread is null");
+    }
 
-	if (thread->handle == NULL)
-	{
-		THROW("LvThread is null");
-	}
+    if (thread->handle == NULL)
+    {
+        THROW("LvThread is null");
+    }
 
-	SetThreadAffinityMask(thread->handle, affinity);
+    SetThreadAffinityMask(thread->handle, affinity);
 }
 
-int ThreadUtils::bj_current_thread_get_name(char* name)
+int ThreadUtils::bj_current_thread_get_name(char *name)
 {
-	if (ThreadUtils::bj_is_current_main_thread())
-	{
-		strcpy_s(name, strlen("Main Thread") + 1, "Main Thread");
-		return 0;
-	}
-	else
-	{
-		wchar_t* threadName = NULL;
+    if (ThreadUtils::bj_is_current_main_thread())
+    {
+        strcpy_s(name, strlen("Main Thread") + 1, "Main Thread");
+        return 0;
+    }
+    else
+    {
+        wchar_t *threadName = NULL;
 
-		HRESULT hr = GetThreadDescription(GetCurrentThread(), &threadName);
+        HRESULT hr = GetThreadDescription(GetCurrentThread(), &threadName);
 
-		if (SUCCEEDED(hr))
-		{
-			// wchar ÀÇ utf-8 ¹öÀü ¹®ÀÚ¿­ Å©±â¸¦ ¸®ÅÏÇÑ´Ù.
-			int size = WideCharToMultiByte(CP_UTF8, WC_NO_BEST_FIT_CHARS, threadName, -1, NULL, NULL, NULL, NULL);
+        if (SUCCEEDED(hr))
+        {
+            // wchar ì˜ utf-8 ë²„ì „ ë¬¸ìì—´ í¬ê¸°ë¥¼ ë¦¬í„´í•œë‹¤.
+            int size = WideCharToMultiByte(CP_UTF8,
+                                           WC_NO_BEST_FIT_CHARS,
+                                           threadName,
+                                           -1,
+                                           NULL,
+                                           NULL,
+                                           NULL,
+                                           NULL);
 
-			// wchar type ÀÇ threadName ¹®ÀÚ¿­À», utf-8 typeÀÇ name À¸·Î º¯È¯ÇØÁØ´Ù.
-			WideCharToMultiByte(CP_UTF8, WC_NO_BEST_FIT_CHARS, threadName, -1, name, size, NULL, NULL);
+            // wchar type ì˜ threadName ë¬¸ìì—´ì„, utf-8 typeì˜ name ìœ¼ë¡œ ë³€í™˜í•´ì¤€ë‹¤.
+            WideCharToMultiByte(CP_UTF8,
+                                WC_NO_BEST_FIT_CHARS,
+                                threadName,
+                                -1,
+                                name,
+                                size,
+                                NULL,
+                                NULL);
 
-			// threadName ¿¡ ÇÒ´çµÈ ¸Ş¸ğ¸®¸¦ ÇØÁ¦ÇØÁØ´Ù. 
-			LocalFree(threadName);
-		}
+            // threadName ì— í• ë‹¹ëœ ë©”ëª¨ë¦¬ë¥¼ í•´ì œí•´ì¤€ë‹¤.
+            LocalFree(threadName);
+        }
 
-		return hr;
-	}
+        return hr;
+    }
 }
 
-int ThreadUtils::bj_thread_set_name(ThreadInfo* thread, const char* name)
+int ThreadUtils::bj_thread_set_name(ThreadInfo *thread, const char *name)
 {
-	return SetThreadDescription(thread->handle, (PCWSTR)name);
+    return SetThreadDescription(thread->handle, (PCWSTR)name);
 }
 
 void ThreadUtils::bj_thread_sleep(unsigned long milliseconds)
 {
-	Sleep(milliseconds);
+    Sleep(milliseconds);
 }
 
 bool ThreadUtils::bj_thread_yield()
 {
-	return SwitchToThread();
+    return SwitchToThread();
 }
 
 size_t ThreadUtils::bj_thread_current_stack_limit()
 {
-	// ULONG_PTR : unsigned long ÇüÅÂ·Î, ¸Ş¸ğ¸® ÁÖ¼Ò¸¦ ÀúÀåÇÏ´Â º¯¼ö type À¸·Î ¸¹ÀÌ ¾²ÀÎ´Ù.
-	ULONG_PTR stackBase = 0;
+    // ULONG_PTR : unsigned long í˜•íƒœë¡œ, ë©”ëª¨ë¦¬ ì£¼ì†Œë¥¼ ì €ì¥í•˜ëŠ” ë³€ìˆ˜ type ìœ¼ë¡œ ë§ì´ ì“°ì¸ë‹¤.
+    ULONG_PTR stackBase = 0;
 
-	ULONG_PTR stackLimit = 0;
+    ULONG_PTR stackLimit = 0;
 
-	GetCurrentThreadStackLimits(&stackLimit, &stackBase);
+    GetCurrentThreadStackLimits(&stackLimit, &stackBase);
 
-	// ÇöÀç thread °¡ °¡Áö°í ÀÖ´Â stack ÀÇ size ¸¦ ¸®ÅÏÇØÁØ´Ù. 
-	// stackBase	: top of stack		(highest memory address in stack)
-	// stackLimit   : bottom of stack	(lowest memory address in stack)
-	// Âü°í : stack Àº high -> low ¹æÇâÀ¸·Î ¸Ş¸ğ¸®¸¦ ÇÒ´çÇØ°£´Ù.
-	return (size_t)(stackBase - stackLimit);
+    // í˜„ì¬ thread ê°€ ê°€ì§€ê³  ìˆëŠ” stack ì˜ size ë¥¼ ë¦¬í„´í•´ì¤€ë‹¤.
+    // stackBase	: top of stack		(highest memory address in stack)
+    // stackLimit   : bottom of stack	(lowest memory address in stack)
+    // ì°¸ê³  : stack ì€ high -> low ë°©í–¥ìœ¼ë¡œ ë©”ëª¨ë¦¬ë¥¼ í• ë‹¹í•´ê°„ë‹¤.
+    return (size_t)(stackBase - stackLimit);
 }
 
 unsigned long ThreadUtils::bj_thread_get_current_id(void)
 {
-	return ((unsigned long)GetCurrentThreadId());
+    return ((unsigned long)GetCurrentThreadId());
 }
 
 bool ThreadUtils::bj_is_current_main_thread()
 {
-	return ThreadUtils::bj_main_thread_id() == ThreadUtils::bj_thread_get_current_id();
+    return ThreadUtils::bj_main_thread_id() ==
+           ThreadUtils::bj_thread_get_current_id();
 }
 
 /*
-¸ŞÀÎ ¾²·¹µå ³»¿¡¼­ 1È¸ È£ÃâÇÏ¿© ÃÊ±âÈ­ÇÒ ÇÊ¿ä°¡ ÀÖ´Ù.
+ë©”ì¸ ì“°ë ˆë“œ ë‚´ì—ì„œ 1íšŒ í˜¸ì¶œí•˜ì—¬ ì´ˆê¸°í™”í•  í•„ìš”ê°€ ìˆë‹¤.
 */
 unsigned long ThreadUtils::bj_main_thread_id()
 {
-	static unsigned long mainThreadId = bj_thread_get_current_id();
+    static unsigned long mainThreadId = bj_thread_get_current_id();
 
-	return mainThreadId;
+    return mainThreadId;
 }
 
 unsigned int ThreadUtils::bj_thread_get_hardware_count()
 {
-	return std::thread::hardware_concurrency();
+    return std::thread::hardware_concurrency();
 }
 
-CRIC_SECT* ThreadUtils::bj_crit_sect_create()
+CRIC_SECT *ThreadUtils::bj_crit_sect_create()
 {
-	CRIC_SECT* sect = (CRIC_SECT*)malloc(sizeof(CRIC_SECT));
+    CRIC_SECT *sect = (CRIC_SECT *)malloc(sizeof(CRIC_SECT));
 
-	InitializeCriticalSection(&sect->handle);
+    InitializeCriticalSection(&sect->handle);
 
-	sect->isInit = true;
+    sect->isInit = true;
 
-	return sect;
+    return sect;
 };
 
-void ThreadUtils::bj_crit_sect_lock(CRIC_SECT* sect)
+void ThreadUtils::bj_crit_sect_lock(CRIC_SECT *sect)
 {
-	if (sect->isInit == false)
-	{
-		InitializeCriticalSection(&sect->handle);
-		sect->isInit = true;
-	}
+    if (sect->isInit == false)
+    {
+        InitializeCriticalSection(&sect->handle);
+        sect->isInit = true;
+    }
 
-	EnterCriticalSection(&sect->handle);
+    EnterCriticalSection(&sect->handle);
 }
 
-bool ThreadUtils::bj_crit_sect_try_lock(CRIC_SECT* sect)
+bool ThreadUtils::bj_crit_sect_try_lock(CRIC_SECT *sect)
 {
-	if (sect == nullptr)
-	{
-		THROW("sect is null");
-	}
+    if (sect == nullptr)
+    {
+        THROW("sect is null");
+    }
 
-	// Mutex
-	//return WaitForSingleObject(mutex->handle, 0) == WAIT_OBJECT_0;
+    // Mutex
+    //return WaitForSingleObject(mutex->handle, 0) == WAIT_OBJECT_0;
 
-	return TryEnterCriticalSection(&sect->handle) != 0;
+    return TryEnterCriticalSection(&sect->handle) != 0;
 }
 
-void ThreadUtils::bj_crit_sect_unlock(CRIC_SECT* sect)
+void ThreadUtils::bj_crit_sect_unlock(CRIC_SECT *sect)
 {
-	LeaveCriticalSection(&sect->handle);
+    LeaveCriticalSection(&sect->handle);
 }
 
-void ThreadUtils::bj_crit_sect_destroy(CRIC_SECT* sect)
+void ThreadUtils::bj_crit_sect_destroy(CRIC_SECT *sect)
 {
-	DeleteCriticalSection(&sect->handle);
-	free(sect);
+    DeleteCriticalSection(&sect->handle);
+    free(sect);
 }
 
-void ThreadUtils::bj_spin_init(SpinLock* spinlock)
+void ThreadUtils::bj_spin_init(SpinLock *spinlock)
 {
-	// ÇØ´ç spinlock ÀÇ atomic value ¸¦ 0 À¸·Î ÃÊ±âÈ­
-	bj_atomic_set(&spinlock->flag, 0);
+    // í•´ë‹¹ spinlock ì˜ atomic value ë¥¼ 0 ìœ¼ë¡œ ì´ˆê¸°í™”
+    bj_atomic_set(&spinlock->flag, 0);
 }
 
-bool ThreadUtils::bj_spin_try_lock(SpinLock* spinlock)
+bool ThreadUtils::bj_spin_try_lock(SpinLock *spinlock)
 {
-	// bj_spin_init ½Ã¿¡ '0'À¸·Î ¼³Á¤ 
-	// old : 0
-	// new : 1
+    // bj_spin_init ì‹œì— '0'ìœ¼ë¡œ ì„¤ì •
+    // old : 0
+    // new : 1
 
-	// ¸¸¾à spinlock °ªÀÌ '0'ÀÌ¾ú´Ù¸é, '1' ·Î update µÇ°í true ¸®ÅÏ
-	//					  '1'ÀÌ¾ú´Ù¸é, '1' ·Î update µÇÁö ¾Ê°í false ¸¦ ¸®ÅÏ
-	return !bj_atomic_compare_and_swap(&spinlock->flag, 0, 1);
+    // ë§Œì•½ spinlock ê°’ì´ '0'ì´ì—ˆë‹¤ë©´, '1' ë¡œ update ë˜ê³  true ë¦¬í„´
+    //					  '1'ì´ì—ˆë‹¤ë©´, '1' ë¡œ update ë˜ì§€ ì•Šê³  false ë¥¼ ë¦¬í„´
+    return !bj_atomic_compare_and_swap(&spinlock->flag, 0, 1);
 }
 
-void ThreadUtils::bj_spin_lock(SpinLock* spinlock)
+void ThreadUtils::bj_spin_lock(SpinLock *spinlock)
 {
-	// bj_spin_try_lock °ªÀÌ false ¸¦ ¸®ÅÏÇÒ ¶§±îÁö ¹«ÇÑ ¹İº¹
-	// Áï, spin_lock °ªÀÌ '1' ÀÏ¶§±îÁö ¹«ÇÑ ¹İº¹ 
-	//     ´Ù¸¥ ¾²·¹µå¿¡¼­ ÇØ´ç °ªÀ» '1' ·Î ¼³Á¤ÇÒ ¶§±îÁö ¹«ÇÑ ´ë±â
-	while (bj_spin_try_lock(spinlock));
+    // bj_spin_try_lock ê°’ì´ false ë¥¼ ë¦¬í„´í•  ë•Œê¹Œì§€ ë¬´í•œ ë°˜ë³µ
+    // ì¦‰, spin_lock ê°’ì´ '1' ì¼ë•Œê¹Œì§€ ë¬´í•œ ë°˜ë³µ
+    //     ë‹¤ë¥¸ ì“°ë ˆë“œì—ì„œ í•´ë‹¹ ê°’ì„ '1' ë¡œ ì„¤ì •í•  ë•Œê¹Œì§€ ë¬´í•œ ëŒ€ê¸°
+    while (bj_spin_try_lock(spinlock))
+        ;
 }
 
-void ThreadUtils::bj_spin_unlock(SpinLock* spinlock)
+void ThreadUtils::bj_spin_unlock(SpinLock *spinlock)
 {
-	// bj_spin_init ½Ã¿¡ '0'À¸·Î ¼³Á¤ 
-	// old : 1
-	// new : 0
+    // bj_spin_init ì‹œì— '0'ìœ¼ë¡œ ì„¤ì •
+    // old : 1
+    // new : 0
 
-	// ¸¸¾à spinlock °ªÀÌ '1'ÀÌ¾ú´Ù¸é, '0' ·Î update µÇ°í true ¸®ÅÏ
-	//					  '0'ÀÌ¾ú´Ù¸é, '0' ·Î update µÇÁö ¾Ê°í false ¸¦ ¸®ÅÏ
-	bj_atomic_compare_and_swap(&spinlock->flag, 1, 0);
+    // ë§Œì•½ spinlock ê°’ì´ '1'ì´ì—ˆë‹¤ë©´, '0' ë¡œ update ë˜ê³  true ë¦¬í„´
+    //					  '0'ì´ì—ˆë‹¤ë©´, '0' ë¡œ update ë˜ì§€ ì•Šê³  false ë¥¼ ë¦¬í„´
+    bj_atomic_compare_and_swap(&spinlock->flag, 1, 0);
 }
 
-int ThreadUtils::bj_atomic_set(Atomic* a, int val)
+int ThreadUtils::bj_atomic_set(Atomic *a, int val)
 {
-	// _InterlockedExchange : atomic exchange ¿¬»êÀ» ¼öÇàÇÏ´Â ÇÔ¼ö
-	return _InterlockedExchange((long*)&a->value, val);
+    // _InterlockedExchange : atomic exchange ì—°ì‚°ì„ ìˆ˜í–‰í•˜ëŠ” í•¨ìˆ˜
+    return _InterlockedExchange((long *)&a->value, val);
 }
 
-int ThreadUtils::bj_atomic_get(Atomic* a)
+int ThreadUtils::bj_atomic_get(Atomic *a)
 {
-	int r;
+    int r;
 
-	do
-	{
-		r = a->value;
+    do
+    {
+        r = a->value;
 
-		// bj_atomic_compare_and_swap(a, r, r)
-		// false ? : a->value °¡ r °ú ´Ù¸£´Ù´Â ÀÇ¹Ì
-		// true  ? : a->value °¡ r °ú °°´Ù´Â ÀÇ¹Ì
-		// ¿©·¯ ¾²·¹µå¿¡¼­ ÇØ´ç atomic value ¿¡ µ¿½Ã Á¢±ÙÇÑ´Ù°í »ı°¢ÇØº¸ÀÚ.
-		// a->value °¡ 1ÀÌ¾ú´Ù. 
+        // bj_atomic_compare_and_swap(a, r, r)
+        // false ? : a->value ê°€ r ê³¼ ë‹¤ë¥´ë‹¤ëŠ” ì˜ë¯¸
+        // true  ? : a->value ê°€ r ê³¼ ê°™ë‹¤ëŠ” ì˜ë¯¸
+        // ì—¬ëŸ¬ ì“°ë ˆë“œì—ì„œ í•´ë‹¹ atomic value ì— ë™ì‹œ ì ‘ê·¼í•œë‹¤ê³  ìƒê°í•´ë³´ì.
+        // a->value ê°€ 1ì´ì—ˆë‹¤.
 
-		// A Thread : r = a->value; ±îÁö¸¸, ½ÇÇà, bj_atomic_compare_and_swap À» ½ÇÇàÇÏ±â Àü. r Àº 1
-		// B Thread : ±× »çÀÌ¿¡ atomic add ¸¦ ÇÔ. a->value ´Â 2;
+        // A Thread : r = a->value; ê¹Œì§€ë§Œ, ì‹¤í–‰, bj_atomic_compare_and_swap ì„ ì‹¤í–‰í•˜ê¸° ì „. r ì€ 1
+        // B Thread : ê·¸ ì‚¬ì´ì— atomic add ë¥¼ í•¨. a->value ëŠ” 2;
 
-		// ÀÚ. A Thread ´Â bj_atomic_compare_and_swap À» ÅëÇØ¼­ ÇöÀç atomic value ¸¦ '1' ·Î update ÇÏ°íÀÚ ÇÑ´Ù.
-		// A Thread : bj_atomic_compare_and_swap(a(2), r(1), r(1)) => 2¿Í 1 Àº ´Ù¸£´Ù. µû¶ó¼­ return °ªÀº false
-		// ´Ù½Ã ¿¬»êÀ» ½ÃµµÇÑ´Ù
+        // ì. A Thread ëŠ” bj_atomic_compare_and_swap ì„ í†µí•´ì„œ í˜„ì¬ atomic value ë¥¼ '1' ë¡œ update í•˜ê³ ì í•œë‹¤.
+        // A Thread : bj_atomic_compare_and_swap(a(2), r(1), r(1)) => 2ì™€ 1 ì€ ë‹¤ë¥´ë‹¤. ë”°ë¼ì„œ return ê°’ì€ false
+        // ë‹¤ì‹œ ì—°ì‚°ì„ ì‹œë„í•œë‹¤
 
-		// r = a->value (2)
-		// A Thread : atomic->value ¸¦ '2' ·Î update ½ÃµµÇÑ´Ù.
-		// bj_atomic_compare_and_swap(a(2), r(2), r(2)) => 2¿Í 2 Àº °°´Ù. µû¶ó¼­ return true
-	} while (!bj_atomic_compare_and_swap(a, r, r));
+        // r = a->value (2)
+        // A Thread : atomic->value ë¥¼ '2' ë¡œ update ì‹œë„í•œë‹¤.
+        // bj_atomic_compare_and_swap(a(2), r(2), r(2)) => 2ì™€ 2 ì€ ê°™ë‹¤. ë”°ë¼ì„œ return true
+    } while (!bj_atomic_compare_and_swap(a, r, r));
 
-	return r;
+    return r;
 }
 
-int ThreadUtils::bj_atomic_add(Atomic* a, int v)
+int ThreadUtils::bj_atomic_add(Atomic *a, int v)
 {
-	/*
-	_InterlockedExchangeAdd ¿Í _InterlockedIncrement ÀÇ Â÷ÀÌÁ¡
+    /*
+	_InterlockedExchangeAdd ì™€ _InterlockedIncrement ì˜ ì°¨ì´ì 
 
 	1) _InterlockedExchangeAdd
-	- ±â´É : Æ¯Á¤°ª¸¸Å­ Áõ°¡ (²À 1ÀÌ ¾Æ´Ï¾îµµ µÈ´Ù)
-	- ¸®ÅÏ : add ÀüÀÇ origin value
+	- ê¸°ëŠ¥ : íŠ¹ì •ê°’ë§Œí¼ ì¦ê°€ (ê¼­ 1ì´ ì•„ë‹ˆì–´ë„ ëœë‹¤)
+	- ë¦¬í„´ : add ì „ì˜ origin value
 
 	2) _InterlockedIncrement
-	- ±â´É : 1 ¸¸ Áõ°¡
-	- ¸®ÅÏ : add Àü origin value
+	- ê¸°ëŠ¥ : 1 ë§Œ ì¦ê°€
+	- ë¦¬í„´ : add ì „ origin value
 	*/
-	return _InterlockedExchangeAdd((long*)&a->value, v);
+    return _InterlockedExchangeAdd((long *)&a->value, v);
 }
 
-int ThreadUtils::bj_atomic_increase(Atomic* a)
+int ThreadUtils::bj_atomic_increase(Atomic *a)
 {
-	return _InterlockedIncrement((long*)&a->value);
+    return _InterlockedIncrement((long *)&a->value);
 }
 
-int ThreadUtils::bj_atomic_decrease(Atomic* a)
+int ThreadUtils::bj_atomic_decrease(Atomic *a)
 {
-	return _InterlockedDecrement((long*)&a->value);
+    return _InterlockedDecrement((long *)&a->value);
 }
 
-bool ThreadUtils::bj_atomic_compare_and_swap(Atomic* atomic, int oldVal, int newVal)
+bool ThreadUtils::bj_atomic_compare_and_swap(Atomic *atomic,
+                                             int oldVal,
+                                             int newVal)
 {
-	// ±â´É    : Æ¯Á¤ °ª ~ atomic °ªÀ» ºñ±³ÇÑ´Ù. ¸¸¾à µ¿ÀÏÇÏ´Ù¸é »õ·Î¿î value ·Î replace ÇÑ´Ù. 
-	// ¸®ÅÏ °ª : compare and swap ¿¬»ê ÀÌÀü °ª
-	// newValue : replace ÇÏ°íÀÚ ÇÏ´Â °ª
-	// oldValue : ÇöÀç atomic->value ¿Í ºñ±³ÇÏ°íÀÚ ÇÏ´Â °ª.
+    // ê¸°ëŠ¥    : íŠ¹ì • ê°’ ~ atomic ê°’ì„ ë¹„êµí•œë‹¤. ë§Œì•½ ë™ì¼í•˜ë‹¤ë©´ ìƒˆë¡œìš´ value ë¡œ replace í•œë‹¤.
+    // ë¦¬í„´ ê°’ : compare and swap ì—°ì‚° ì´ì „ ê°’
+    // newValue : replace í•˜ê³ ì í•˜ëŠ” ê°’
+    // oldValue : í˜„ì¬ atomic->value ì™€ ë¹„êµí•˜ê³ ì í•˜ëŠ” ê°’.
 
-	// True  ? : newValu ·Î update ¼º°ø
-	// False ? : update X
-	return _InterlockedCompareExchange((long*)&atomic->value, (long)newVal, (long)oldVal) == (long)oldVal;
-
+    // True  ? : newValu ë¡œ update ì„±ê³µ
+    // False ? : update X
+    return _InterlockedCompareExchange((long *)&atomic->value,
+                                       (long)newVal,
+                                       (long)oldVal) == (long)oldVal;
 }
 
-ConditionVar* ThreadUtils::bj_condition_create()
+ConditionVar *ThreadUtils::bj_condition_create()
 {
-	ConditionVar* r = (ConditionVar*)malloc(sizeof(ConditionVar));
+    ConditionVar *r = (ConditionVar *)malloc(sizeof(ConditionVar));
 
-	InitializeConditionVariable(&r->handle);
+    InitializeConditionVariable(&r->handle);
 
-	return r;
+    return r;
 }
 
-void ThreadUtils::bj_condition_destroy(ConditionVar* condition)
+void ThreadUtils::bj_condition_destroy(ConditionVar *condition)
 {
-	free(condition);
+    free(condition);
 }
 
-bool ThreadUtils::bj_condition_wait(ConditionVar* con, CRIC_SECT* mutex, uint32 time)
+bool ThreadUtils::bj_condition_wait(ConditionVar *con,
+                                    CRIC_SECT *mutex,
+                                    uint32 time)
 {
-	/*
-	¸ÖÆ¼¾²·¹µå È¯°æ¿¡¼­, ´Ù¼öÀÇ ¾²·¹µå°¡ Æ¯Á¤ condition ÀÌ true °¡ µÉ¶§±îÁö ±â´Ù¸®°Ô ÇÒ ¶§ »ç¿ëµÇ´Â ÇÔ¼öÀÌ´Ù.
+    /*
+	ë©€í‹°ì“°ë ˆë“œ í™˜ê²½ì—ì„œ, ë‹¤ìˆ˜ì˜ ì“°ë ˆë“œê°€ íŠ¹ì • condition ì´ true ê°€ ë ë•Œê¹Œì§€ ê¸°ë‹¤ë¦¬ê²Œ í•  ë•Œ ì‚¬ìš©ë˜ëŠ” í•¨ìˆ˜ì´ë‹¤.
 
-	- ¾²·¹µå´Â condition variable ÀÌ true °¡ µÉ ¶§±îÁö ±â´Ù¸®°í(ºí·ÎÅ·), ±× µ¿¾È critical section À» release ÇÑ´Ù. (unlock)
-	- ´Ù¸¥ running thread °¡ WakeConditionVariable ÇÔ¼ö¸¦ È£ÃâÇÏ¸é, ÇØ´ç condition variable ¿¡ ´ëÇÑ ´ë±âÅ¥¿¡ µé¾î°¡ ÀÖ´Â
-	  ºí·ÎÅ· ¾²·¹µå¸¦ ±ú¿î´Ù.
-	- ±×¸®°í ´Ù½Ã ÇØ´ç condition variable ÀÌ true ÀÎÁö ¾Æ´ÑÁö¸¦ °Ë»çÇÑ´Ù.
+	- ì“°ë ˆë“œëŠ” condition variable ì´ true ê°€ ë  ë•Œê¹Œì§€ ê¸°ë‹¤ë¦¬ê³ (ë¸”ë¡œí‚¹), ê·¸ ë™ì•ˆ critical section ì„ release í•œë‹¤. (unlock)
+	- ë‹¤ë¥¸ running thread ê°€ WakeConditionVariable í•¨ìˆ˜ë¥¼ í˜¸ì¶œí•˜ë©´, í•´ë‹¹ condition variable ì— ëŒ€í•œ ëŒ€ê¸°íì— ë“¤ì–´ê°€ ìˆëŠ”
+	  ë¸”ë¡œí‚¹ ì“°ë ˆë“œë¥¼ ê¹¨ìš´ë‹¤.
+	- ê·¸ë¦¬ê³  ë‹¤ì‹œ í•´ë‹¹ condition variable ì´ true ì¸ì§€ ì•„ë‹Œì§€ë¥¼ ê²€ì‚¬í•œë‹¤.
 	*/
-	return SleepConditionVariableCS(&con->handle, &mutex->handle, time);
+    return SleepConditionVariableCS(&con->handle, &mutex->handle, time);
 }
 
-void ThreadUtils::bj_condition_notify_one(ConditionVar* con)
+void ThreadUtils::bj_condition_notify_one(ConditionVar *con)
 {
-	WakeConditionVariable(&con->handle);
+    WakeConditionVariable(&con->handle);
 }
 
-void ThreadUtils::bj_condition_notify_all(ConditionVar* con)
+void ThreadUtils::bj_condition_notify_all(ConditionVar *con)
 {
-	WakeAllConditionVariable(&con->handle);
+    WakeAllConditionVariable(&con->handle);
 }
 
-Semaphore* ThreadUtils::bj_semaphore_create(int init_count)
+Semaphore *ThreadUtils::bj_semaphore_create(int init_count)
 {
-	Semaphore* r;
-	r = (Semaphore*)malloc(sizeof(Semaphore));
-	// init_count : ¼¼¸¶Æ÷ °³Ã¼ÀÇ ÃÊ±â °³¼öÀÔ´Ï´Ù.¼¼¸¶Æ÷ÀÇ »óÅÂ´Â °³¼ö°¡ 0º¸´Ù Å©°í 0ÀÏ ¶§ ºÎÈ£°¡ ¾ø´Â °æ¿ì ½ÅÈ£¸¦ º¸³À´Ï´Ù.
-	//				´ë±â ÇÔ¼ö°¡ ¼¼¸¶Æ÷¸¦ ±â´Ù¸®°í ÀÖ´ø ½º·¹µå¸¦ ÇØÁ¦ÇÒ ¶§¸¶´Ù ¼ö°¡ 1¾¿ °¨¼ÒÇÕ´Ï´Ù
-	// lMaximumCount(32 * 1024) : ¼¼¸¶Æ÷ °³Ã¼ ÃÖ´ë °³¼ö 
-	// NULL : name
-	r->handle = CreateSemaphore(NULL, init_count, 32 * 1024, NULL);
-	r->count = init_count;
+    Semaphore *r;
+    r = (Semaphore *)malloc(sizeof(Semaphore));
+    // init_count : ì„¸ë§ˆí¬ ê°œì²´ì˜ ì´ˆê¸° ê°œìˆ˜ì…ë‹ˆë‹¤.ì„¸ë§ˆí¬ì˜ ìƒíƒœëŠ” ê°œìˆ˜ê°€ 0ë³´ë‹¤ í¬ê³  0ì¼ ë•Œ ë¶€í˜¸ê°€ ì—†ëŠ” ê²½ìš° ì‹ í˜¸ë¥¼ ë³´ëƒ…ë‹ˆë‹¤.
+    //				ëŒ€ê¸° í•¨ìˆ˜ê°€ ì„¸ë§ˆí¬ë¥¼ ê¸°ë‹¤ë¦¬ê³  ìˆë˜ ìŠ¤ë ˆë“œë¥¼ í•´ì œí•  ë•Œë§ˆë‹¤ ìˆ˜ê°€ 1ì”© ê°ì†Œí•©ë‹ˆë‹¤
+    // lMaximumCount(32 * 1024) : ì„¸ë§ˆí¬ ê°œì²´ ìµœëŒ€ ê°œìˆ˜
+    // NULL : name
+    r->handle = CreateSemaphore(NULL, init_count, 32 * 1024, NULL);
+    r->count = init_count;
 
-	if (r->handle == NULL)
-	{
-		THROW("Couldn't create semaphore");
-	}
+    if (r->handle == NULL)
+    {
+        THROW("Couldn't create semaphore");
+    }
 
-	return r;
+    return r;
 }
 
-void ThreadUtils::bj_semaphore_destroy(Semaphore* sema)
+void ThreadUtils::bj_semaphore_destroy(Semaphore *sema)
 {
-	if (sema != NULL)
-	{
-		if (sema->handle != NULL)
-		{
-			// semaphore ¿Í °ü·ÃµÈ ¸®¼Ò½ºµéÀ» clear ÇØÁØ´Ù.
-			CloseHandle(sema->handle);
-			sema->handle = 0;
-		}
-		free(sema);
-	}
+    if (sema != NULL)
+    {
+        if (sema->handle != NULL)
+        {
+            // semaphore ì™€ ê´€ë ¨ëœ ë¦¬ì†ŒìŠ¤ë“¤ì„ clear í•´ì¤€ë‹¤.
+            CloseHandle(sema->handle);
+            sema->handle = 0;
+        }
+        free(sema);
+    }
 }
 
-int ThreadUtils::bj_semaphore_signal(Semaphore* sema)
+int ThreadUtils::bj_semaphore_signal(Semaphore *sema)
 {
-	if (sema == NULL)
-	{
-		THROW("Semaphore is null");
-	}
+    if (sema == NULL)
+    {
+        THROW("Semaphore is null");
+    }
 
-	// InterlockedIncrement , InterlockedDecrement
-	// - ¸ÖÆ¼¾²·¹µå È¯°æ¿¡¼­ Æ¯Á¤ º¯¼ö °ªÀ» 1Áõ°¡, 1 °¨¼Ò ½ÃÄÑÁÖ´Â ÇÔ¼ö
+    // InterlockedIncrement , InterlockedDecrement
+    // - ë©€í‹°ì“°ë ˆë“œ í™˜ê²½ì—ì„œ íŠ¹ì • ë³€ìˆ˜ ê°’ì„ 1ì¦ê°€, 1 ê°ì†Œ ì‹œì¼œì£¼ëŠ” í•¨ìˆ˜
 
-	// InterlockedIncrement(&sema->count);
-	// InterlockedIncrement((LONG volatile*)&sema->count);
-	InterlockedIncrement((LONG*)&sema->count);
+    // InterlockedIncrement(&sema->count);
+    // InterlockedIncrement((LONG volatile*)&sema->count);
+    InterlockedIncrement((LONG *)&sema->count);
 
-	// release one unit from semaphore
-	if (ReleaseSemaphore(sema->handle, 1, NULL) == FALSE)
-	{
-		// InterlockedDecrement((LONG volatile*)&sema->count);
-		InterlockedDecrement((LONG*)&sema->count);
-		THROW("ReleaseSemaphore() failed");
-	}
-	return 0;
+    // release one unit from semaphore
+    if (ReleaseSemaphore(sema->handle, 1, NULL) == FALSE)
+    {
+        // InterlockedDecrement((LONG volatile*)&sema->count);
+        InterlockedDecrement((LONG *)&sema->count);
+        THROW("ReleaseSemaphore() failed");
+    }
+    return 0;
 }
 
-int ThreadUtils::bj_semaphore_wait(Semaphore* sema, int timeout)
+int ThreadUtils::bj_semaphore_wait(Semaphore *sema, int timeout)
 {
-	if (sema == NULL)
-	{
-		THROW("Semaphore is null");
-	}
+    if (sema == NULL)
+    {
+        THROW("Semaphore is null");
+    }
 
-	int r;
-	DWORD millisec;
+    int r;
+    DWORD millisec;
 
 
-	if (timeout == bj_WAIT_INFINITE)
-	{
-		millisec = INFINITE;
-	}
-	else
-	{
-		millisec = (DWORD)timeout;
-	}
+    if (timeout == bj_WAIT_INFINITE)
+    {
+        millisec = INFINITE;
+    }
+    else
+    {
+        millisec = (DWORD)timeout;
+    }
 
-	// millisec µ¿¾È ¼¼¸¶Æ÷¾î °´Ã¼¿¡ ´ëÇØ wait À» ÇÑ´Ù.
-	// °á°ú
-	// 1) semaphore ¿¡ ´ëÇØ signal À» ÇÏ°Å³ª (..? release ÇÏ°Å³ª°¡ ¾Æ´Ñ°¡?)
-	// 2) timeout 
-	switch (WaitForSingleObjectEx(sema->handle, millisec, FALSE))
-	{
-		// ÇØ´ç milisec ½Ã°£ ¾È¿¡ ¼º°øÀûÀ¸·Î signaled µÇ¾ú´Ù´Â ÀÇ¹Ì
-	case WAIT_OBJECT_0:
-		InterlockedDecrement((LONG*)&sema->count);
-		r = 0;
-		break;
-	case WAIT_TIMEOUT:
-		r = bj_WAIT_TIMEDOUT;
-		break;
-	default:
-		THROW("WaitForSingleObject() failed");
-		break;
-	}
+    // millisec ë™ì•ˆ ì„¸ë§ˆí¬ì–´ ê°ì²´ì— ëŒ€í•´ wait ì„ í•œë‹¤.
+    // ê²°ê³¼
+    // 1) semaphore ì— ëŒ€í•´ signal ì„ í•˜ê±°ë‚˜ (..? release í•˜ê±°ë‚˜ê°€ ì•„ë‹Œê°€?)
+    // 2) timeout
+    switch (WaitForSingleObjectEx(sema->handle, millisec, FALSE))
+    {
+        // í•´ë‹¹ milisec ì‹œê°„ ì•ˆì— ì„±ê³µì ìœ¼ë¡œ signaled ë˜ì—ˆë‹¤ëŠ” ì˜ë¯¸
+    case WAIT_OBJECT_0:
+        InterlockedDecrement((LONG *)&sema->count);
+        r = 0;
+        break;
+    case WAIT_TIMEOUT:
+        r = bj_WAIT_TIMEDOUT;
+        break;
+    default:
+        THROW("WaitForSingleObject() failed");
+        break;
+    }
 
-	return r;
+    return r;
 }
 
 SpinLock::SpinLock()
 {
-	Init();
+    Init();
 }
 
 void SpinLock::Init()
 {
-	_InterlockedExchange((long*)&flag.value, 0);
+    _InterlockedExchange((long *)&flag.value, 0);
 }
 
 bool SpinLock::TryLock()
 {
-	// ±â´É    : Æ¯Á¤ °ª ~ atomic °ªÀ» ºñ±³ÇÑ´Ù. ¸¸¾à µ¿ÀÏÇÏ´Ù¸é »õ·Î¿î value ·Î replace ÇÑ´Ù. 
-	// ¸®ÅÏ °ª : compare and swap ¿¬»ê ÀÌÀü °ª
-	// newValue : replace ÇÏ°íÀÚ ÇÏ´Â °ª
-	// oldValue : ÇöÀç atomic->value ¿Í ºñ±³ÇÏ°íÀÚ ÇÏ´Â °ª.
+    // ê¸°ëŠ¥    : íŠ¹ì • ê°’ ~ atomic ê°’ì„ ë¹„êµí•œë‹¤. ë§Œì•½ ë™ì¼í•˜ë‹¤ë©´ ìƒˆë¡œìš´ value ë¡œ replace í•œë‹¤.
+    // ë¦¬í„´ ê°’ : compare and swap ì—°ì‚° ì´ì „ ê°’
+    // newValue : replace í•˜ê³ ì í•˜ëŠ” ê°’
+    // oldValue : í˜„ì¬ atomic->value ì™€ ë¹„êµí•˜ê³ ì í•˜ëŠ” ê°’.
 
-	// True  ? : newValu ·Î update ¼º°ø
-	// False ? : update X
+    // True  ? : newValu ë¡œ update ì„±ê³µ
+    // False ? : update X
 
-	return !_InterlockedCompareExchange((long*)&flag.value, (long)0, (long)1) == (long)1;
-	// return !bj_atomic_compare_and_swap(&flag, 0, 1);
+    return !_InterlockedCompareExchange((long *)&flag.value,
+                                        (long)0,
+                                        (long)1) == (long)1;
+    // return !bj_atomic_compare_and_swap(&flag, 0, 1);
 }
 
 void SpinLock::Lock()
 {
-	// bj_spin_try_lock °ªÀÌ false ¸¦ ¸®ÅÏÇÒ ¶§±îÁö ¹«ÇÑ ¹İº¹
-	// Áï, spin_lock °ªÀÌ '1' ÀÏ¶§±îÁö ¹«ÇÑ ¹İº¹ 
-	//     ´Ù¸¥ ¾²·¹µå¿¡¼­ ÇØ´ç °ªÀ» '1' ·Î ¼³Á¤ÇÒ ¶§±îÁö ¹«ÇÑ ´ë±â
-	while (TryLock());
+    // bj_spin_try_lock ê°’ì´ false ë¥¼ ë¦¬í„´í•  ë•Œê¹Œì§€ ë¬´í•œ ë°˜ë³µ
+    // ì¦‰, spin_lock ê°’ì´ '1' ì¼ë•Œê¹Œì§€ ë¬´í•œ ë°˜ë³µ
+    //     ë‹¤ë¥¸ ì“°ë ˆë“œì—ì„œ í•´ë‹¹ ê°’ì„ '1' ë¡œ ì„¤ì •í•  ë•Œê¹Œì§€ ë¬´í•œ ëŒ€ê¸°
+    while (TryLock())
+        ;
 }
 
 void SpinLock::Unlock()
-{	
-	// bj_spin_init ½Ã¿¡ '0'À¸·Î ¼³Á¤ 
-	// old : 1
-	// new : 0
+{
+    // bj_spin_init ì‹œì— '0'ìœ¼ë¡œ ì„¤ì •
+    // old : 1
+    // new : 0
 
-	// ¸¸¾à spinlock °ªÀÌ '1'ÀÌ¾ú´Ù¸é, '0' ·Î update µÇ°í true ¸®ÅÏ
-	//					  '0'ÀÌ¾ú´Ù¸é, '0' ·Î update µÇÁö ¾Ê°í false ¸¦ ¸®ÅÏ
-	// bj_atomic_compare_and_swap(&flag.value, 1, 0);
-	_InterlockedCompareExchange((long*)&flag.value, (long)1, (long)0) == (long)0;
+    // ë§Œì•½ spinlock ê°’ì´ '1'ì´ì—ˆë‹¤ë©´, '0' ë¡œ update ë˜ê³  true ë¦¬í„´
+    //					  '0'ì´ì—ˆë‹¤ë©´, '0' ë¡œ update ë˜ì§€ ì•Šê³  false ë¥¼ ë¦¬í„´
+    // bj_atomic_compare_and_swap(&flag.value, 1, 0);
+    _InterlockedCompareExchange((long *)&flag.value, (long)1, (long)0) ==
+        (long)0;
 }

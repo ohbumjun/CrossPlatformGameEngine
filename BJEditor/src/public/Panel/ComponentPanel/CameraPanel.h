@@ -1,24 +1,24 @@
-#pragma once
+ï»¿#pragma once
 
 #include "Hazel/Scene/Component/Component.h"
 #include "Hazel/Scene/SceneCamera.h"
 
-namespace Hazel {
-	class EditorCamera;
+namespace Hazel
+{
+class EditorCamera;
 }
 
 namespace HazelEditor
 {
-	class CameraPanel
-	{
-	public :
-		/*
-		ÁÖÀÇ »çÇ× 
+class CameraPanel
+{
+public:
+    /*
+		ì£¼ì˜ ì‚¬í•­ 
 		- HazelEditor::DrawComponent<CameraComponent>("Camera", entity, &HazelEditor::CameraPanel::DrawCameraComponent);
-		  ¿Í °°ÀÌ DrawComponent ÇÔ¼öÀÇ ÀÎÀÚ¿ëÀ¸·Î »ç¿ëÇÑ´Ù.
+		  ì™€ ê°™ì´ DrawComponent í•¨ìˆ˜ì˜ ì¸ììš©ìœ¼ë¡œ ì‚¬ìš©í•œë‹¤.
 		*/
-		static void DrawCameraComponent(Hazel::Component& inputComponent);
-		static void DrawEditorCamera(Hazel::EditorCamera* editorCamera);
-	};
-}
-
+    static void DrawCameraComponent(Hazel::Component &inputComponent);
+    static void DrawEditorCamera(Hazel::EditorCamera *editorCamera);
+};
+} // namespace HazelEditor

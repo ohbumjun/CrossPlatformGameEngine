@@ -10,41 +10,39 @@
 // Hazel Editor Namespace 로 설정한다.
 namespace Hazel
 {
-	class SceneHierarchyPanel
-	{
-	public :
-		SceneHierarchyPanel() {};
-		// SceneHierarchyPanel(const Ref<Scene>& scene);
-		SceneHierarchyPanel(const std::weak_ptr<Scene>& scene);
-		// void SetContext(const Ref<Scene>& scene);
-		void SetContext(const  std::weak_ptr<Scene>& scene);
-		void SetSelectedEntity(Entity entity);
-		void OnImGuiRender();
-		Entity GetSelectedEntity() const
-		{
-			return m_SelectedEntity;
-		}
-	private :
-		void drawEntityNode(Entity entity);
-		void drawComponents(Entity entity);
-		void drawNameComponent(Entity entity);
-		void drawTransformComponent(Entity entity);
-		void drawCameraComponent(Entity entity);
-		void drawRendererComponent(Entity entity);
-		void drawColliderComponent(Entity entity);
-		void drawRigidBodyComponent(Entity entity);
+class SceneHierarchyPanel
+{
+public:
+    SceneHierarchyPanel(){};
+    // SceneHierarchyPanel(const Ref<Scene>& scene);
+    SceneHierarchyPanel(const std::weak_ptr<Scene> &scene);
+    // void SetContext(const Ref<Scene>& scene);
+    void SetContext(const std::weak_ptr<Scene> &scene);
+    void SetSelectedEntity(Entity entity);
+    void OnImGuiRender();
+    Entity GetSelectedEntity() const
+    {
+        return m_SelectedEntity;
+    }
 
-		template<typename T>
-		void displayAddComponentEntry(const std::string& entryName);
+private:
+    void drawEntityNode(Entity entity);
+    void drawComponents(Entity entity);
+    void drawNameComponent(Entity entity);
+    void drawTransformComponent(Entity entity);
+    void drawCameraComponent(Entity entity);
+    void drawRendererComponent(Entity entity);
+    void drawColliderComponent(Entity entity);
+    void drawRigidBodyComponent(Entity entity);
 
-
-		void drawAddComponentPanel();
-		std::weak_ptr<Scene> m_Context;
-		Entity m_SelectedEntity;
-
-		friend class Scene;
-	};
-}
+    template <typename T>
+    void displayAddComponentEntry(const std::string &entryName);
 
 
+    void drawAddComponentPanel();
+    std::weak_ptr<Scene> m_Context;
+    Entity m_SelectedEntity;
 
+    friend class Scene;
+};
+} // namespace Hazel
