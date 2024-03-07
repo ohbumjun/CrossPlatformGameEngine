@@ -11,6 +11,35 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+
+#define HAZEL_REFLECTION_FRIEND friend void ::__hazelrf_register_function(); friend struct Lv::LvMethodInfo::Result;
+
+// 위의 메크로들은 struct 를 너무 많이 생성하기 때문에 모든 정보를 아래와 같이 그냥 담는게 나을 것 같다.
+
+#define HAZEL_REFLECTION_REGIST									\
+static void __hazelrf_register_function();							\
+namespace														\
+{																\
+	struct __$lvrf_register__									\
+	{															\
+		__$hazelrf_register__()									\
+		{														\
+			__hazelrf_register_function();							\
+		}														\
+	};															\
+}																\
+static const __$hazelrf_register__ HAZEL_MAKE_UNIQUE_CLASS_NAME();	\
+static void __lvrf_register_function()
+
+#if defined(__HAZEL_GEN_REFLECTION__)
+#define HAZEL_REFLECT __attribute__((annotate("reflect")))
+#define HAZEL_ATTRIBUTE(...) __attribute__((annotate(#__VA_ARGS__)))
+#else
+#define HAZEL_REFLECT
+#define HAZEL_ATTRIBUTE(...)
+#endif
+
+
 #pragma region >> example
 
 #if 0
@@ -219,6 +248,43 @@ public:
 class HAZEL_API Reflection
 {
 public :
+
+	template<typename T>
+	struct template_type_trait : std::false_type
+	{
+		static LvList<LvTypeId> get_template_arguments() { return {}; }
+	};
+
+	template<template <typename... > class T, typename... Args>
+	struct template_type_trait<T<Args...>> : std::true_type
+	{
+		static LvList<LvTypeId> get_template_arguments() { return { LvReflection::GetTypeId<Args>()..., }; }
+	};
+
+	template<typename C, typename = void>
+	struct has_enumerator : std::false_type {};
+
+	template<typename C>
+	struct has_enumerator<C, typename std::enable_if<
+		!std::is_same<decltype(std::declval<C>().CreateEnumerator()), void>::value
+	>::type> : std::true_type {};
+
+	template<typename T>
+	using is_template_instance = template_type_trait<T>;
+
+	template<typename C, typename = void>
+	struct has_type_string :std::false_type {};
+
+	template<typename C>
+	struct has_type_string<C, typename std::enable_if<
+		!std::is_same<decltype(C::TypeString()), void>::value
+	>::type> : std::true_type {};
+
+	template <typename T>
+	struct is_variant_primitive : std::integral_constant<bool,
+		std::is_same<T, size_t>::value ||
+		std::is_same<T, uint64>::value> {};
+
 	// final : 더이상 상속하지 않는 마지막 class
 	struct TypeInfo final
 	{
