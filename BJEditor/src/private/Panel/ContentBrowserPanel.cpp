@@ -5,13 +5,15 @@
 namespace HazelEditor {
 
 	// Once we have projects, change this
-	extern const std::filesystem::path g_AssetPath = "assets";
+extern const std::filesystem::path g_AssetPath = RESOURCE_ROOT "assets";
 
 	ContentBrowserPanel::ContentBrowserPanel()
 		: m_CurrentDirectory(g_AssetPath)
-	{
-		m_DirectoryIcon = Hazel::TextureManager::CreateTexture2D("Resources/Icons/ContentBrowser/DirectoryIcon.png");
-		m_FileIcon = Hazel::TextureManager::CreateTexture2D("Resources/Icons/ContentBrowser/FileIcon.png");
+    {
+        m_DirectoryIcon = Hazel::TextureManager::CreateTexture2D(
+            RESOURCE_ROOT"Resources/Icons/ContentBrowser/DirectoryIcon.png");
+        m_FileIcon = Hazel::TextureManager::CreateTexture2D(
+            RESOURCE_ROOT "Resources/Icons/ContentBrowser/FileIcon.png");
 	}
 
 	void ContentBrowserPanel::OnImGuiRender()
