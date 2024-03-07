@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "FieldInfo.h"
+#include "TypeInfo.h"
 #include "TypeUtils.h"
 #include "VariableId.h"
 #include "hzpch.h"
@@ -10,6 +11,37 @@
 // 위해서 glm type 관련 header 파일 include
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+
+#define HAZEL_REFLECTION_FRIEND                                                \
+    friend void ::__hazelrf_register_function();                               \
+    friend struct Lv::LvMethodInfo::Result;
+
+// 위의 메크로들은 struct 를 너무 많이 생성하기 때문에 모든 정보를 아래와 같이 그냥 담는게 나을 것 같다.
+
+#define HAZEL_REFLECTION_REGIST                                                \
+    static void __hazelrf_register_function();                                 \
+    namespace                                                                  \
+    {                                                                          \
+    struct __$lvrf_register__                                                  \
+    {                                                                          \
+        __$hazelrf_register__()                                                \
+        {                                                                      \
+            __hazelrf_register_function();                                     \
+        }                                                                      \
+    };                                                                         \
+    }                                                                          \
+    static const __$hazelrf_register__ HAZEL_MAKE_UNIQUE_CLASS_NAME();         \
+    static void __lvrf_register_function()
+
+#if defined(__HAZEL_GEN_REFLECTION__)
+#define HAZEL_REFLECT __attribute__((annotate("reflect")))
+#define HAZEL_ATTRIBUTE(...) __attribute__((annotate(#__VA_ARGS__)))
+#else
+#define HAZEL_REFLECT
+#define HAZEL_ATTRIBUTE(...)
+#endif
+
 
 #pragma region>> example
 
@@ -98,15 +130,6 @@ enum class DataType : unsigned short // uint16
     RAWDATA
 };
 
-enum TypeFlags
-{
-    TypeFlags_IsFundamental,
-    TypeFlags_IsIntegral,
-    TypeFlags_IsFloatingPoint,
-    TypeFlags_IsTriviallyCopyable,
-    TypeFlags_SIZE // MAX
-};
-
 class GameComponent
 {
 public:
@@ -124,44 +147,62 @@ public:
 class HAZEL_API Reflection
 {
 public:
-    // final : 더이상 상속하지 않는 마지막 class
-    struct TypeInfo final
+    template <typename T>
+    struct template_type_trait : std::false_type
     {
-        std::string m_Name{};
-        uint32_t m_Size{};
+        static std::vector<TypeId> get_template_arguments()
+        {
+            return {};
+        }
+    };
 
-        // alignof(T) : 해당 type 의 address 가 어떤 숫자의 배수가 되어야 하는지
-        // ex) 64 bit에서는 "double" 의 aligntment 는 8이다., "int" 는 4
-        // 즉, double 변수의 주소는 8의 배수여야 한다는 것이다.
-        /*
-			struct MyStruct {
-				int x;
-				double y;
-			};
+    template <template <typename...> class T, typename... Args>
+    struct template_type_trait<T<Args...>> : std::true_type
+    {
+        static std::vector<TypeId> get_template_arguments()
+        {
+            return {
+                Reflection::GetTypeID<Args>()...,
+            };
+        }
+    };
 
-			alignof(MyStruct) 는 8이 된다.
-			뭔가, 바이트패딩과 같이 가장 큰 자료형을 기준으로 세팅하는 것 같다.
-			double 을 포함하므로 8이 된다.
-			물론 이러한 alignof 값도 플랫폼, 컴파일러 등에 따라 달라진다.
-		*/
-        uint32_t m_Align{};
+    template <typename C, typename = void>
+    struct has_enumerator : std::false_type
+    {
+    };
 
-        std::bitset<TypeFlags_SIZE> m_Flags{};
+    template <typename C>
+    struct has_enumerator<C,
+                          typename std::enable_if<!std::is_same<
+                              decltype(std::declval<C>().CreateEnumerator()),
+                              void>::value>::type> : std::true_type
+    {
+    };
 
-        // 생성자 등록하는 방법 따로 참고하기
-        // - GameComponent 를 상속받는 Class 들은 생성자를 따로 만들어줄 수 있다.
-        std::function<GameComponent *()> m_GCConstructor{};
+    template <typename T>
+    using is_template_instance = template_type_trait<T>;
 
-        std::set<FieldInfo> m_fieldInfos;
+    template <typename C, typename = void>
+    struct has_type_string : std::false_type
+    {
+    };
 
-        uint32 m_PointerCount;
+    template <typename C>
+    struct has_type_string<
+        C,
+        typename std::enable_if<
+            !std::is_same<decltype(C::TypeString()), void>::value>::type>
+        : std::true_type
+    {
+    };
 
-        std::vector<TypeId> m_SubTypes;
-
-        TypeId m_Type;
-
-        // Pointer 제외한, 원본 Type
-        TypeId m_OriginalType;
+    template <typename T>
+    struct is_variant_primitive
+        : std::integral_constant<bool,
+                                 std::is_same<T, size_t>::value ||
+                                     std::is_same<T, uint64>::value>
+    {
     };
 
     template <typename T>
@@ -176,6 +217,92 @@ public:
     static std::string GetTypeName(const TypeId &id);
 
     static uint64_t Hash(std::string_view str);
+
+    template <
+        typename T,
+        typename std::enable_if<std::is_array<T>::value, T>::type * = nullptr>
+    static TypeId GetPointerTypeId()
+    {
+        return GetTypeID<typename remove_all<T>::type *>();
+    }
+
+    template <
+        typename T,
+        typename std::enable_if<!std::is_array<T>::value, T>::type * = nullptr>
+    static TypeId GetPointerTypeId()
+    {
+        return GetTypeID<T *>();
+    }
+
+    static TypeId GetPointerTypeId(TypeId typeId)
+    {
+        return GetTypeInfo(typeId)->m_PointerID;
+    }
+
+    /**
+	* const T 를 반환
+	*/
+    template <
+        typename T,
+        typename std::enable_if<!std::is_void<T>::value, T>::type * = nullptr>
+    static TypeId GetConstTypeId()
+    {
+        static_assert(!std::is_const<T>::value, "T is already const");
+        return GetTypeID<const T>();
+    }
+
+    /**
+	* void 타입일 경우 invalid type 을 반환
+	*/
+    template <
+        typename T,
+        typename std::enable_if<std::is_void<T>::value, T>::type * = nullptr>
+    static TypeId GetConstTypeId()
+    {
+        return 0;
+    }
+
+    /*
+	template <typename T, typename std::enable_if<!std::is_void<T>::value, T>::type* = nullptr>
+	static TypeId GetTypeID() noexcept
+	{
+		//static char const type_id = '\0';
+		//return &type_id;
+		static uint32 type_id = 0;
+
+		if (type_id == 0)
+		{
+			LvString name = MakeTypeString<T>();
+			type_id = MakeTypeId(name.c_str());
+		}
+
+		return type_id;
+	}
+
+	template <typename T, typename std::enable_if<std::is_void<T>::value, T>::type* = nullptr>
+	static TypeId GetTypeID() noexcept
+	{
+		return 0;
+	}
+
+	template <typename T>
+	static TypeId GetTypeID(const T& t)
+	{
+		return GetTypeID<typename remove_all<T>::type>();
+	}
+
+	*/
+
+    /**
+	* 탬플릿 가변 인자 ts 의 Type 배열을 반환
+	*/
+    template <typename... Ts>
+    static std::vector<TypeId> GetTypeIDs()
+    {
+        std::vector<TypeId> r;
+        r.push_back(GetTypeID<Ts>()...);
+        return r;
+    }
 
     template <typename T>
     static TypeId GetTypeID();
@@ -192,6 +319,9 @@ public:
     static void RegisterBase();
 
     static void RegisterBase(TypeId base, TypeId subType);
+
+    // static void RegistTypeCode(const LvTypeId type, const TypeCode code);
+    static void RegistDataType(const TypeId type, const DataType code);
 
     static uint32 GetTypeSize(const TypeId &id);
 
@@ -211,6 +341,8 @@ public:
     static bool IsFloatingPoint(TypeId id);
     static bool IsTriviallyCopyable(TypeId id);
 
+    static void Regist(const TypeId type, TypeInfo &&info);
+
     template <typename Class, typename Field>
     static FieldInfo RegisterField(const std::string &fieldName,
                                    uint32_t Offset);
@@ -228,6 +360,270 @@ public:
                                    uint32_t Align,
                                    bool isIterable,
                                    bool isArray);
+
+    template <
+        typename T,
+        typename std::enable_if<std::is_enum<T>::value, T>::type * = nullptr>
+    static void RegistEnum(TypeInfo &info)
+    {
+        // RegistTypeCode(info.id, Reflection::GetTypeCode(LV_TYPEOF(typename std::underlying_type<T>::type)));
+        RegistTypeCode(info.id,
+                       Reflection::GetDataType(
+                           LV_TYPEOF(typename std::underlying_type<T>::type)));
+    }
+
+    template <
+        typename T,
+        typename std::enable_if<!std::is_enum<T>::value, T>::type * = nullptr>
+    static void RegistEnum(TypeInfo &info)
+    {
+    }
+
+    /**
+	* @brief 탬플릿 인자 TEnum 의 Type 정보에 Enum 필드를 등록
+	*/
+    template <typename TEnum>
+    static void RegistEnumField(const char *fieldName, size_t value = 0)
+    {
+        Regist<TEnum>();
+
+        LvEnumFieldInfo info;
+        info.name = fieldName;
+        info.value = value;
+
+        LvTypeId type = GetTypeId<TEnum>();
+
+        RegistEnumField(type, std::move(info));
+    }
+
+    /**
+	* @brief type에 EnumField 정보를 등록
+	*/
+    static void RegistEnumField(const TypeId type, EnumFieldInfo &&info);
+
+    static bool CanRegist(const TypeId &type)
+    {
+        // const TypeInfoContainer& container = GetContainers();
+        // return !container.Contains(type);
+        return false;
+    }
+
+    /**
+	* 등록된 Type을 Delete
+	*/
+    static void Unregist(const TypeId type)
+    {
+        // TypeInfoContainer& container = GetContainers();
+        // LvHashtable<LvString, LvTypeId>& nameMap = GetNameMaps();
+        // if (container.Contains(type))
+        // {
+        // 	const LvTypeInfo& info = container[type];
+        // 	if (nameMap.ContainsKey(info.name))
+        // 	{
+        // 		nameMap.Remove(info.name);
+        // 	}
+        // 	container.Remove(type);
+        // }
+    }
+
+    /**
+	* @brief 탬플릿 인자 T를 name 인자로 Type 정보를 등록합니다.
+	* @param assemblyName dll 이름
+	* @param refresh 재등록 여부
+	*/
+    template <typename T>
+    static TypeId RegistByName(const char *name,
+                               const char *assemblyName = "",
+                               bool refresh = false)
+    {
+        TypeId id = GetTypeID<T>();
+
+        if (!CanRegist(id))
+        {
+            if (refresh)
+                Unregist(id);
+            else
+                return id;
+        }
+
+        TypeInfo info;
+        // info.size = sizeof(T);
+        // info.align = LV_ALIGNOF(T);
+        // info.id = id;
+        // info.assemblyName = assemblyName;
+        // info.isArray = std::is_array<T>::value;
+        // info.isIterable = is_iterable<T>::value;
+        // info.isPrimitive = std::is_fundamental<T>::value;
+        // info.isPod = std::is_pod<T>::value;
+        // info.isEnum = std::is_enum<T>::value;
+        // info.rawId = GetTypeID<typename remove_all<T>::type>();
+        // info.pointerCount = pointer_count<T>::value;
+        // info.name = name;
+        // info.templateArguments = template_type_trait<T>::get_template_arguments();
+        // info.pointerId = GetPointerTypeId<T>();
+
+        if (!info.isArray)
+        {
+            RegistPointer<T *>(assemblyName, refresh);
+        }
+
+        RegistEnum<T>(info);
+        RegistConstructors<T>(info);
+        Regist(id, std::move(info));
+        RegistEnumerator<T>(info);
+
+        return id;
+    }
+
+    /**
+	* @brief 탬플릿 인자 T 값을 등록합니다.
+	* @param assemblyName dll 이름
+	* @param refresh 재등록 여부
+	*/
+    template <typename T>
+    static TypeId Regist(const char *assemblyName = "", bool refresh = false)
+    {
+        return RegistByName<T>(TypeRawName<T>().c_str(), assemblyName, refresh);
+    }
+
+    /**
+	* @brief 기본/소멸자들을 등록합니다.
+	*/
+    template <typename T,
+              typename std::enable_if<std::is_class<T>::value &&
+                                          !std::is_abstract<T>::value,
+                                      T>::type * = nullptr>
+    static void RegistConstructors(TypeInfo &info)
+    {
+        RegistDefaultConstructor<T>(info);
+
+        RegistMoveConstructor<T>(info);
+
+        RegistCopyConstructor<T>(info);
+
+        RegistDeconstructor<T>(info);
+    }
+
+    /**
+	* @brief 기본/소멸자들이 없을 경우.
+	*/
+    template <typename T,
+              typename std::enable_if<!std::is_class<T>::value ||
+                                          std::is_abstract<T>::value,
+                                      T>::type * = nullptr>
+    static void RegistConstructors(TypeInfo &info)
+    {
+    }
+
+    /**
+	* @brief 기본 생성자가 있을 경우.
+	*/
+    template <typename T,
+              typename std::enable_if<
+                  std::is_default_constructible<T>::value ||
+                      std::is_trivially_default_constructible<T>::value,
+                  T>::type * = nullptr>
+    static void RegistDefaultConstructor(TypeInfo &info)
+    {
+        info.constructors.eligible = [](void *ptr) { return new (ptr) T(); };
+    }
+    /**
+	* @brief 기본 생성자가 없을 경우.
+	*/
+    template <typename T,
+              typename std::enable_if<
+                  !(std::is_default_constructible<T>::value ||
+                    std::is_trivially_default_constructible<T>::value),
+                  T>::type * = nullptr>
+    static void RegistDefaultConstructor(TypeInfo &info)
+    {
+    }
+
+    /**
+	* @brief 이동 생성자가 있을 경우.
+	*/
+    template <typename T,
+              typename std::enable_if<
+                  (std::is_move_constructible<T>::value ||
+                   std::is_trivially_move_constructible<T>::value) &&
+                      !std::is_pointer<T>::value,
+                  T>::type * = nullptr>
+    static void RegistMoveConstructor(TypeInfo &info)
+    {
+        info.constructors.move = [](void *ptr, void *other) {
+            T *t = static_cast<T *>(other);
+            T *res = new (ptr) T(std::move(*t));
+            t->~T();
+            return res;
+            //return new (ptr) T(std::move(*t));
+        };
+    }
+
+    /**
+	* @brief 이동 생성자가 없을 경우.
+	*/
+    template <typename T,
+              typename std::enable_if<
+                  !(std::is_move_constructible<T>::value ||
+                    std::is_trivially_move_constructible<T>::value ||
+                    std::is_pointer<T>::value),
+                  T>::type * = nullptr>
+    static void RegistMoveConstructor(TypeInfo &info)
+    {
+    }
+
+    /**
+	* @brief 복사 생성자가 있을 경우.
+	*/
+    template <typename T,
+              typename std::enable_if<std::is_copy_constructible<T>::value &&
+                                          !std::is_pointer<T>::value,
+                                      T>::type * = nullptr>
+    static void RegistCopyConstructor(TypeInfo &info)
+    {
+        info.constructors.copy = [](void *dst, const void *src) {
+            const T *t = static_cast<const T *>(src);
+            return new (dst) T(*t);
+        };
+    }
+
+    /**
+	* @brief 복사 생성자가 없을 경우.
+	*/
+    template <typename T,
+              typename std::enable_if<!std::is_copy_constructible<T>::value ||
+                                          std::is_pointer<T>::value,
+                                      T>::type * = nullptr>
+    static void RegistCopyConstructor(TypeInfo &info)
+    {
+    }
+
+    /**
+	* @brief 소멸자가 있을 경우.
+	*/
+    template <typename T,
+              typename std::enable_if<std::is_destructible<T>::value, T>::type
+                  * = nullptr>
+    static void RegistDeconstructor(TypeInfo &info)
+    {
+        info.destructor = [](void *ptr) {
+            T *t = static_cast<T *>(ptr);
+            t->~T();
+        };
+    }
+
+    static void RegistConstructor(const TypeId &type,
+                                  ConstructorInfo::UserDefine &&info);
+
+    /**
+	* @brief 소멸자가 없을 경우.
+	*/
+    template <typename T,
+              typename std::enable_if<!std::is_destructible<T>::value, T>::type
+                  * = nullptr>
+    static void RegistDeconstructor(TypeInfo &info)
+    {
+    }
 
     static size_t GetFieldCount(TypeId classId);
 
@@ -255,6 +651,115 @@ private:
 
         // // Class Type -> (member field 이름, member offset)
         // std::unordered_map<TypeId, std::unordered_map<std::string, uint32_t>> FieldInfoNameMap{};
+
+        /*
+			template<typename T, typename std::enable_if<!std::is_const<T>::value, T>::type* = nullptr>
+	void Regist(LvReflection::TypeCode code, bool isPrimitive)
+	{
+		const LvTypeId id = LvReflection::GetTypeId<T>();
+		
+		LvTypeInfo info;
+		info.size = sizeof(T);
+		info.align = LV_ALIGNOF(T);
+		info.id = id;
+		info.assemblyName = __ASSEMBLY__NAME__;
+		info.isArray = std::is_array<T>::value;
+		info.isIterable = is_iterable<T>::value;
+		info.isPrimitive = isPrimitive;
+		info.isPod = std::is_pod<T>::value;
+		info.isEnum = std::is_enum<T>::value;
+		info.rawId = LvReflection::GetTypeId<typename remove_all<T>::type>();
+		info.pointerCount = pointer_count<T>::value;
+		info.name = LvReflection::MakeTypeString<T>();
+		info.templateArguments = LvReflection::template_type_trait<T>::get_template_arguments();
+		info.pointerId = LvReflection::GetPointerTypeId<T>();
+
+		LvReflection::RegistConstructors<T>(info);
+		Regist(id, std::move(info));
+		
+		_typeCodeMap.Add(id, code);
+
+		Regist<const T>(code, isPrimitive);
+	}
+
+	template<typename T, typename std::enable_if<std::is_const<T>::value, T>::type* = nullptr>
+	void Regist(LvReflection::TypeCode code, bool isPrimitive)
+	{
+		const LvTypeId id = LvReflection::GetTypeId<T>();
+
+		LvTypeInfo info;
+		info.size = sizeof(T);
+		info.align = LV_ALIGNOF(T);
+		info.id = id;
+		info.assemblyName = __ASSEMBLY__NAME__;
+		info.isArray = std::is_array<T>::value;
+		info.isIterable = is_iterable<T>::value;
+		info.isPrimitive = isPrimitive;
+		info.isPod = std::is_pod<T>::value;
+		info.isEnum = std::is_enum<T>::value;
+		info.rawId = LvReflection::GetTypeId<typename remove_all<T>::type>();
+		info.pointerCount = pointer_count<T>::value;
+		info.name = LvReflection::MakeTypeString<T>();
+		info.templateArguments = LvReflection::template_type_trait<T>::get_template_arguments();
+		// @donghun 파싱 중 예외 발생으로 인해 해당 부분은 주석처리 하였으나 처리 필요.
+		// info.pointerId = LvReflection::GetPointerTypeId<T>();
+
+		//LvReflection::RegistConstructor<T>(info);
+		Regist(id, std::move(info));
+
+		_typeCodeMap.Add(id, code);
+	}
+
+	// TODO : 중복 코드이긴 한데 방법이 딱히 없네 ;
+	void Regist(const LvTypeId type, LvTypeInfo&& info) const
+	{
+		TypeInfoContainer& container = GetContainers();
+		LvHashtable<LvString, LvTypeId>& nameMap = GetNameMaps();
+
+		if (!nameMap.ContainsKey(info.name))
+		{
+			nameMap.Add(info.name, type);
+		}
+
+		if (!container.Contains(type))
+		{
+			container.Add(type, std::move(info));
+		}
+	}
+
+	void RegistTypeCode(const LvTypeId type, const LvReflection::TypeCode typecode)
+	{
+		if (!_typeCodeMap.ContainsKey(type))
+		{
+			_typeCodeMap.Add(type, typecode);
+		}
+	}
+
+	LvReflection::TypeCode GetTypeCode(LvTypeId type) const
+	{
+		if (false == LvReflection::HasRegist(type))
+		{
+			return LvReflection::TypeCode::EMPTY;
+		}
+
+		if (_typeCodeMap.ContainsKey(type))
+		{
+			return _typeCodeMap[type];
+		}
+
+		const LvTypeInfo* info = LvReflection::GetTypeInfo(type);
+
+		if (info->isEnum)
+		{
+#if defined(UINT64)
+#undef UINT64
+#endif 
+			return LvReflection::TypeCode::UINT64;
+		}
+
+		return LvReflection::TypeCode::OBJECT;
+	}
+		*/
     };
 
     static StaticContainerData &getStaticContainerData();
@@ -284,6 +789,7 @@ inline std::string Reflection::GetTypeName()
 
     return GetTypeName(typeID);
 }
+
 
 template <typename T>
 inline TypeId Reflection::RegistType()
@@ -344,7 +850,7 @@ inline void Reflection::RegisterBase()
 }
 
 template <typename T>
-inline Reflection::TypeInfo *Reflection::GetTypeInfo()
+inline TypeInfo *Reflection::GetTypeInfo()
 {
     static StaticContainerData &containerData = getStaticContainerData();
 
@@ -403,7 +909,7 @@ inline TypeId Reflection::createTypeID()
 }
 
 template <typename T>
-inline Reflection::TypeInfo Reflection::createTypeInfo()
+inline TypeInfo Reflection::createTypeInfo()
 {
     static StaticContainerData &containerData = getStaticContainerData();
 

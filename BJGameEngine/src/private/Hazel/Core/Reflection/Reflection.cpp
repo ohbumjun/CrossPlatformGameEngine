@@ -180,6 +180,13 @@ uint64_t Reflection::Hash(std::string_view str)
     return hash_value;
 }
 
+/*
+void Reflection::RegistTypeCode(const LvTypeId type, const TypeCode code)
+{
+	GetSystemTypeInitializer().RegistTypeCode(type, code);
+}
+*/
+
 
 Reflection::StaticContainerData &Reflection::getStaticContainerData()
 {
@@ -198,7 +205,7 @@ Reflection::StaticContainerData &Reflection::getStaticContainerData()
     return data;
 };
 
-Reflection::TypeInfo *Reflection::GetTypeInfo(const TypeId &id)
+TypeInfo *Reflection::GetTypeInfo(const TypeId &id)
 {
     static StaticContainerData &containerData = getStaticContainerData();
 
@@ -283,6 +290,75 @@ bool Reflection::IsTriviallyCopyable(TypeId id)
     return typeInfo.m_Flags[TypeFlags_IsTriviallyCopyable];
 }
 
+/*
+void LvReflection::Regist(const TypeId type, TypeInfo&& info)
+{
+	TypeInfoContainer& container = GetContainers();
+	LvHashtable<LvString, LvTypeId>& nameMap = GetNameMaps();
+	SystemTypeInitializer& initializer = GetSystemTypeInitializer();
+
+	if(!initializer.isInitialized)
+	{
+		initializer.isInitialized = true;
+	}
+
+	//Lv::LvList<std::function<void(TypeInfo&)>>& callbacks = get_registed_callbacks();
+	//for (size_t i = 0; i < callbacks.Count(); ++i)
+	//	callbacks[i](info);
+
+	if (!nameMap.ContainsKey(info.name))
+	{
+		nameMap.Add(info.name, type);
+	}
+
+
+	if (!container.Contains(type))
+	{
+		// @bumjunoh container 에 type 을 먼저 add 해야 RegistBase(subType, type) 에서 정상적인 parentType, subType 정보가 세팅된다. 
+		container.Add(type, std::move(info));
+		if (container.precedeTypes.ContainsKey(type))
+		{
+			for (auto& subType : container.precedeTypes[type])
+			{
+				RegistBase(subType, type);
+			}
+		}
+		// container.Add(type, std::move(info));
+	}
+}
+*/
+
+/*
+void Reflection::RegistConstructor(const TypeId& type, ConstructorInfo::UserDefine&& info)
+{
+	const TypeInfoContainer& container = GetContainers();
+
+	if (!HasRegist(type))
+	{
+		// LV_THROW("Type is not registed");
+	}
+
+	LvTypeInfo& typeInfo = container[type];
+	
+	typeInfo.constructors.defines.Add(std::move(info));
+}
+
+
+void Reflection::RegistEnumField(const TypeId type, EnumFieldInfo&& info)
+{
+	const TypeInfoContainer& container = GetContainers();
+
+	if (!HasRegist(type))
+	{
+		LV_THROW("Type is not registed");
+	}
+
+	LvTypeInfo& typeInfo = container[type];
+
+	typeInfo.enumFields.Add(std::move(info));
+}
+*/
+
 #pragma endregion
 
 #pragma region>> reflection_private
@@ -309,6 +385,9 @@ Reflection::StaticContainerData::StaticContainerData()
     registDataType<std::string>(DataType::STRING);
     registDataType<char *>(DataType::STRING);
     registDataType<const char *>(DataType::STRING);
+
+    // TODO : 나중에 외부로 빼야하지 않을까..
+    // Regist<LvEnumerable>(LvReflection::TypeCode::OBJECT, false);
 }
 
 template <typename T>
