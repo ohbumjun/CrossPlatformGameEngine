@@ -3,6 +3,9 @@
 #include "JsonSerializer.h"
 #include "Serializer.h"
 
+namespace Hazel
+{
+
 class JsonSerializer : public Serializer
 {
 public:
@@ -99,3 +102,4 @@ private: // Read
     std::vector<JsonRecord> m_ReadRecord;
     std::stack<const char *> m_KeyRecord;
 };
+} // namespace Hazel

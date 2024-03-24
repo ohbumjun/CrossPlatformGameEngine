@@ -102,6 +102,9 @@ int main()
 
 #pragma endregion
 
+namespace Hazel
+{
+
 // It's derived from MessagePack.
 enum class DataType : unsigned short // uint16
 {
@@ -991,7 +994,7 @@ inline TypeInfo Reflection::createTypeInfo()
 
     return info;
 }
-
+} // namespace Hazel
 
 // VARNAME##TYPE 을 붙인 이름의 "변수"로 만든다.
 // #define _REGISTER_TYPE_INTERNAL(TYPE,VARNAME) RegistType<TYPE> VARNAME##TYPE{};

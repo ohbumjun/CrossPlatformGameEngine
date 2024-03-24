@@ -2,7 +2,10 @@
 #include "Hazel/Core/Reflection/TypeUtils.h"
 #include "hzpch.h"
 
+namespace Hazel
+{
 #pragma region>> field
+
 
 template <typename Class, typename Field>
 FieldInfo Reflection::RegisterField(const std::string &fieldName,
@@ -398,3 +401,4 @@ void Reflection::StaticContainerData::registDataType(DataType code)
 }
 
 #pragma endregion
+} // namespace Hazel

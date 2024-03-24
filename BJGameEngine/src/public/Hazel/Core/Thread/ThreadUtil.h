@@ -4,9 +4,10 @@
 #include <thread>
 
 
-#define bj_WAIT_INFINITE (~(uint32)0)
-#define bj_WAIT_TIMEDOUT 1
-
+#define THREAD_WAIT_INFINITE (~(uint32)0)
+#define THREAD_WAIT_TIMEDOUT 1
+namespace Hazel
+{
 struct CRIC_SECT
 {
     CRITICAL_SECTION handle;
@@ -105,26 +106,28 @@ typedef enum
     LOW = -2,
     HIGH = 2,
 
-} Threadbjiority;
+} ThreadPriority;
 
 class ThreadUtils
 {
 public:
-    static void bj_thread_init(ThreadInfo *thread,
-                               void *(*thread_function)(void *),
-                               void *arg);
-    static void bj_thread_run(ThreadInfo *thread,
-                              void *(*thread_function)(void *),
-                              void *arg);
-    static bool bj_thread_join(ThreadInfo *thread, void *result);
+    static void InitThread(ThreadInfo *thread,
+                           void *(*thread_function)(void *),
+                           void *arg);
+    static void RunThread(ThreadInfo *thread,
+                          void *(*thread_function)(void *),
+                          void *arg);
+
+    // Thread 가 할일을 끝낼 때까지 기다리는 함수가 된다.
+    static bool JoinThread(ThreadInfo *thread);
 
     // Thread 가 할일을 끝낼 때까지 기다린 다음 Thread 를 종료하는 함수
-    static void bj_thread_exit(ThreadInfo *thread, void *exitCode);
+    static void ExitThread(ThreadInfo *thread, void *exitCode);
 
     // Thread 가 일을 끝내는 것과 관계없이 강제로 종료하는 함수
-    static void bj_thread_kill(ThreadInfo *thread, void *exitCode);
+    static void KillThread(ThreadInfo *thread, void *exitCode);
 
-    static void bj_thread_set_priority(ThreadInfo *thread, int bjiority);
+    static void SetPriorityOfThread(ThreadInfo *thread, int bjiority);
 
     /*
 	Affinity : Window 환경에서 bjocessor affinity 란, thread 가 실행될 수 있는
@@ -154,10 +157,10 @@ public:
 		return 0;
 	}
 	*/
-    static void bj_thread_set_affinity(ThreadInfo *thread, int affinity);
-    static int bj_current_thread_get_name(char *name);
-    static int bj_thread_set_name(ThreadInfo *thread, const char *name);
-    static void bj_thread_sleep(unsigned long milliseconds);
+    static void SetThreadAffinity(ThreadInfo *thread, int affinity);
+    static int GetCurrentThreadName(char *name);
+    static int SetCurrentThreadName(ThreadInfo *thread, const char *name);
+    static void SleepThread(unsigned long milliseconds);
 
     /*
 	현재 쓰레드 외에, 다른 쓰레드 중에서 같은 / 더 높은 bjiority 를 가진 쓰레드를
@@ -193,56 +196,53 @@ public:
 		return 0;
 	}
 	*/
-    static bool bj_thread_yield();
-    static size_t bj_thread_current_stack_limit();
-    static unsigned long bj_thread_get_current_id(void);
+    static bool YieldThread();
+    static size_t GetCurrentStackLimit();
+    static unsigned long GetCurrentThreadID(void);
 
     /**
 	 @brief 메인 쓰레드 id를 반환합니다. (메인 쓰레드 내에서 1회 호출 하여 초기화 필요)
 	 @return 쓰레드 id
 	*/
-    static unsigned long bj_main_thread_id();
-    static bool bj_is_current_main_thread();
-    static unsigned int bj_thread_get_hardware_count();
+    static unsigned long GetMainThreadID();
+    static bool IsCurrentMainThread();
+    static unsigned int GetThreadHardwareCount();
 
     // Critical Section
-    static CRIC_SECT *bj_crit_sect_create();
-    static void bj_crit_sect_lock(CRIC_SECT *sect);
-    static bool bj_crit_sect_try_lock(CRIC_SECT *sect);
-    static void bj_crit_sect_unlock(CRIC_SECT *sect);
-    static void bj_crit_sect_destroy(CRIC_SECT *sect);
+    static CRIC_SECT *CreateCritSect();
+    static void LockCritSect(CRIC_SECT *sect);
+    static bool TryLockCritSect(CRIC_SECT *sect);
+    static void UnlockCritSect(CRIC_SECT *sect);
+    static void DestroyCritSect(CRIC_SECT *sect);
 
     // SpinLock
-    static void bj_spin_init(SpinLock *spinlock);
-    static bool bj_spin_try_lock(SpinLock *spinlock);
-    static void bj_spin_lock(SpinLock *spinlock);
-    static void bj_spin_unlock(SpinLock *spinlock);
+    static void InitSpinLock(SpinLock *spinlock);
+    static bool TryLockSpinLock(SpinLock *spinlock);
+    static void LockSpinLock(SpinLock *spinlock);
+    static void UnlockSpinLock(SpinLock *spinlock);
 
     // Atomic
-    static int bj_atomic_set(Atomic *a, int val);
-    static int bj_atomic_get(Atomic *a);
-    static int bj_atomic_add(Atomic *a, int v);
-    static int bj_atomic_increase(Atomic *a);
-    static int bj_atomic_decrease(Atomic *a);
-    static bool bj_atomic_compare_and_swap(Atomic *atomic,
-                                           int oldVal,
-                                           int newVal);
+    static int SetAtomic(Atomic *a, int val);
+    static int GetAtomic(Atomic *a);
+    static int AddAtomic(Atomic *a, int v);
+    static int IncreaseAtomic(Atomic *a);
+    static int DecreaseAtomic(Atomic *a);
+    static bool CompareAndSwapAtomic(Atomic *atomic, int oldVal, int newVal);
 
     // Condition
     // https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-initializeconditionvariable
-    static ConditionVar *bj_condition_create();
-    static void bj_condition_destroy(ConditionVar *condition);
-    static bool bj_condition_wait(ConditionVar *con,
-                                  CRIC_SECT *mutex,
-                                  uint32 time);
-    static void bj_condition_notify_one(ConditionVar *con);
-    static void bj_condition_notify_all(ConditionVar *con);
+    static ConditionVar *CreateCondition();
+    static void DestroyCondition(ConditionVar *condition);
+    static bool WaitCondition(ConditionVar *con, CRIC_SECT *mutex, uint32 time);
+    static void NotifyOneCondtion(ConditionVar *con);
+    static void NotifyAllCondtion(ConditionVar *con);
 
 
     // Semaphore
-    static Semaphore *bj_semaphore_create(int init_value);
-    static void bj_semaphore_destroy(Semaphore *sema);
-    static int bj_semaphore_signal(
+    static Semaphore *CreateCustomSemaphore(int init_value);
+    static void DestroyCustomSemaphore(Semaphore *sema);
+    static int SignalCustomSemaphore(
         Semaphore *sema); // Semaphore 이용해서 lock 거는 함수
-    static int bj_semaphore_wait(Semaphore *sema, int timeout);
+    static int WaitSemaphore(Semaphore *sema, int timeout);
 };
+} // namespace Hazel

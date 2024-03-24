@@ -10,6 +10,9 @@ using namespace rapidjson;
 
 using JsonWriter = rapidjson::PrettyWriter<rapidjson::StringBuffer>;
 
+namespace Hazel
+{
+
 JsonSerializer::JsonSerializer() : Serializer(SerializeType::Serialize)
 {
     m_StringBuffer = new rapidjson::StringBuffer();
@@ -997,3 +1000,4 @@ void *JsonSerializer::getValue(JsonRecord &prevRecord)
 }
 
 #pragma endregion
+} // namespace Hazel

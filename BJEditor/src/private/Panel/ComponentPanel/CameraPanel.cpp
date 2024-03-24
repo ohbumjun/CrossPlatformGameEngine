@@ -13,7 +13,7 @@ void HazelEditor::CameraPanel::DrawCameraComponent(
 	*/
 
     HZ_CORE_ASSERT(inputComponent.GetType() ==
-                       Reflection::GetTypeID<Hazel::CameraComponent>(),
+                       Hazel::Reflection::GetTypeID<Hazel::CameraComponent>(),
                    "component should be camera");
 
     Hazel::CameraComponent &component =

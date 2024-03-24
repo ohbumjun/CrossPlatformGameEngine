@@ -35,6 +35,8 @@ static void get_last_error_message(const wchar_t *buf, size_t size)
     }
 }
 
+namespace Hazel
+{
 Atomic::Atomic(const Atomic &o){
 
 };
@@ -44,15 +46,15 @@ int Atomic::GetValue()
     return value;
 };
 
-void ThreadUtils::bj_thread_init(ThreadInfo *thread,
-                                 void *(*thread_function)(void *),
-                                 void *arg)
+void ThreadUtils::InitThread(ThreadInfo *thread,
+                             void *(*thread_function)(void *),
+                             void *arg)
 {
 }
 
-void ThreadUtils::bj_thread_run(ThreadInfo *thread,
-                                void *(*thread_function)(void *),
-                                void *arg)
+void ThreadUtils::RunThread(ThreadInfo *thread,
+                            void *(*thread_function)(void *),
+                            void *arg)
 {
     // 실제 thread 를 만들어서 os 로부터 handle 값을 리턴받는다.
     thread->handle = (HANDLE)_beginthreadex(
@@ -99,7 +101,7 @@ void ThreadUtils::bj_thread_run(ThreadInfo *thread,
     }
 }
 
-bool ThreadUtils::bj_thread_join(ThreadInfo *thread, void *result)
+bool ThreadUtils::JoinThread(ThreadInfo *thread)
 {
     /*
 	 "joining" a thread refers to the process of waiting for a specific thread to finish its execution
@@ -123,13 +125,18 @@ bool ThreadUtils::bj_thread_join(ThreadInfo *thread, void *result)
 		- 해당 쓰레드가 signaled 상태가 될 때까지 기다린다.
 		  SleepConditionVariableCS  의 차이점은, SleepConditionVariableCS  함수는 특정 조건이 만족할 때까지 wait 하게 하는 것이라면
 		  WaitForSingleObjectEx 는 보다 general 한 목적으로, 특정 조건에 한정된 것은 아니라는 점에서 차이가 있다.
-		*/
+		
+        - 특정 Thread 를 생성해서 할일을 할당할 때는 해당 Thread 가 Non-Signaled 상태이다. 
+          이후 해당 쓰레드가 할일을 끝내면, 해당 쓰레드는 Signaled 상태가 된다.
+
+        - 즉, 아래 함수는 결과적으로 해당 쓰레드가 할일을 끝내고 Signaled 상태가 될 때까지 기다린다.
+        */
         WaitForSingleObjectEx(thread->handle, INFINITE, FALSE);
     }
     return true;
 }
 
-void ThreadUtils::bj_thread_exit(ThreadInfo *thread, void *exitCode)
+void ThreadUtils::ExitThread(ThreadInfo *thread, void *exitCode)
 {
     if (thread == NULL)
     {
@@ -154,7 +161,7 @@ void ThreadUtils::bj_thread_exit(ThreadInfo *thread, void *exitCode)
     thread->handle = NULL;
 }
 
-void ThreadUtils::bj_thread_kill(ThreadInfo *thread, void *exitCode)
+void ThreadUtils::KillThread(ThreadInfo *thread, void *exitCode)
 {
     if (TerminateThread(thread->handle, (DWORD)exitCode) == false)
     {
@@ -164,13 +171,14 @@ void ThreadUtils::bj_thread_kill(ThreadInfo *thread, void *exitCode)
     }
 }
 
-void ThreadUtils::bj_thread_set_priority(ThreadInfo *thread, int priority)
+void ThreadUtils::SetPriorityOfThread(ThreadInfo *thread, int priority)
 {
     // In Windows, thread priorities range from THREAD_PRIORITY_IDLE(lowest) to THREAD_PRIORITY_TIME_CRITICAL(highest).
-    SetThreadPriority(thread->handle, priority);
+    // SetThreadPriority(thread->handle, priority);
+    SetThreadPriority(thread, priority);
 }
 
-void ThreadUtils::bj_thread_set_affinity(ThreadInfo *thread, int affinity)
+void ThreadUtils::SetThreadAffinity(ThreadInfo *thread, int affinity)
 {
     if (thread == NULL)
     {
@@ -185,9 +193,9 @@ void ThreadUtils::bj_thread_set_affinity(ThreadInfo *thread, int affinity)
     SetThreadAffinityMask(thread->handle, affinity);
 }
 
-int ThreadUtils::bj_current_thread_get_name(char *name)
+int ThreadUtils::GetCurrentThreadName(char *name)
 {
-    if (ThreadUtils::bj_is_current_main_thread())
+    if (ThreadUtils::IsCurrentMainThread())
     {
         strcpy_s(name, strlen("Main Thread") + 1, "Main Thread");
         return 0;
@@ -228,22 +236,22 @@ int ThreadUtils::bj_current_thread_get_name(char *name)
     }
 }
 
-int ThreadUtils::bj_thread_set_name(ThreadInfo *thread, const char *name)
+int ThreadUtils::SetCurrentThreadName(ThreadInfo *thread, const char *name)
 {
     return SetThreadDescription(thread->handle, (PCWSTR)name);
 }
 
-void ThreadUtils::bj_thread_sleep(unsigned long milliseconds)
+void ThreadUtils::SleepThread(unsigned long milliseconds)
 {
     Sleep(milliseconds);
 }
 
-bool ThreadUtils::bj_thread_yield()
+bool ThreadUtils::YieldThread()
 {
     return SwitchToThread();
 }
 
-size_t ThreadUtils::bj_thread_current_stack_limit()
+size_t ThreadUtils::GetCurrentStackLimit()
 {
     // ULONG_PTR : unsigned long 형태로, 메모리 주소를 저장하는 변수 type 으로 많이 쓰인다.
     ULONG_PTR stackBase = 0;
@@ -259,33 +267,32 @@ size_t ThreadUtils::bj_thread_current_stack_limit()
     return (size_t)(stackBase - stackLimit);
 }
 
-unsigned long ThreadUtils::bj_thread_get_current_id(void)
+unsigned long ThreadUtils::GetCurrentThreadID(void)
 {
     return ((unsigned long)GetCurrentThreadId());
 }
 
-bool ThreadUtils::bj_is_current_main_thread()
+bool ThreadUtils::IsCurrentMainThread()
 {
-    return ThreadUtils::bj_main_thread_id() ==
-           ThreadUtils::bj_thread_get_current_id();
+    return ThreadUtils::GetMainThreadID() == ThreadUtils::GetCurrentThreadID();
 }
 
 /*
 메인 쓰레드 내에서 1회 호출하여 초기화할 필요가 있다.
 */
-unsigned long ThreadUtils::bj_main_thread_id()
+unsigned long ThreadUtils::GetMainThreadID()
 {
-    static unsigned long mainThreadId = bj_thread_get_current_id();
+    static unsigned long mainThreadId = GetCurrentThreadID();
 
     return mainThreadId;
 }
 
-unsigned int ThreadUtils::bj_thread_get_hardware_count()
+unsigned int ThreadUtils::GetThreadHardwareCount()
 {
     return std::thread::hardware_concurrency();
 }
 
-CRIC_SECT *ThreadUtils::bj_crit_sect_create()
+CRIC_SECT *ThreadUtils::CreateCritSect()
 {
     CRIC_SECT *sect = (CRIC_SECT *)malloc(sizeof(CRIC_SECT));
 
@@ -296,7 +303,7 @@ CRIC_SECT *ThreadUtils::bj_crit_sect_create()
     return sect;
 };
 
-void ThreadUtils::bj_crit_sect_lock(CRIC_SECT *sect)
+void ThreadUtils::LockCritSect(CRIC_SECT *sect)
 {
     if (sect->isInit == false)
     {
@@ -307,7 +314,7 @@ void ThreadUtils::bj_crit_sect_lock(CRIC_SECT *sect)
     EnterCriticalSection(&sect->handle);
 }
 
-bool ThreadUtils::bj_crit_sect_try_lock(CRIC_SECT *sect)
+bool ThreadUtils::TryLockCritSect(CRIC_SECT *sect)
 {
     if (sect == nullptr)
     {
@@ -320,61 +327,61 @@ bool ThreadUtils::bj_crit_sect_try_lock(CRIC_SECT *sect)
     return TryEnterCriticalSection(&sect->handle) != 0;
 }
 
-void ThreadUtils::bj_crit_sect_unlock(CRIC_SECT *sect)
+void ThreadUtils::UnlockCritSect(CRIC_SECT *sect)
 {
     LeaveCriticalSection(&sect->handle);
 }
 
-void ThreadUtils::bj_crit_sect_destroy(CRIC_SECT *sect)
+void ThreadUtils::DestroyCritSect(CRIC_SECT *sect)
 {
     DeleteCriticalSection(&sect->handle);
     free(sect);
 }
 
-void ThreadUtils::bj_spin_init(SpinLock *spinlock)
+void ThreadUtils::InitSpinLock(SpinLock *spinlock)
 {
     // 해당 spinlock 의 atomic value 를 0 으로 초기화
-    bj_atomic_set(&spinlock->flag, 0);
+    SetAtomic(&spinlock->flag, 0);
 }
 
-bool ThreadUtils::bj_spin_try_lock(SpinLock *spinlock)
+bool ThreadUtils::TryLockSpinLock(SpinLock *spinlock)
 {
-    // bj_spin_init 시에 '0'으로 설정
+    // InitSpinLock 시에 '0'으로 설정
     // old : 0
     // new : 1
 
     // 만약 spinlock 값이 '0'이었다면, '1' 로 update 되고 true 리턴
     //					  '1'이었다면, '1' 로 update 되지 않고 false 를 리턴
-    return !bj_atomic_compare_and_swap(&spinlock->flag, 0, 1);
+    return !CompareAndSwapAtomic(&spinlock->flag, 0, 1);
 }
 
-void ThreadUtils::bj_spin_lock(SpinLock *spinlock)
+void ThreadUtils::LockSpinLock(SpinLock *spinlock)
 {
-    // bj_spin_try_lock 값이 false 를 리턴할 때까지 무한 반복
+    // TryLockSpinLock 값이 false 를 리턴할 때까지 무한 반복
     // 즉, spin_lock 값이 '1' 일때까지 무한 반복
     //     다른 쓰레드에서 해당 값을 '1' 로 설정할 때까지 무한 대기
-    while (bj_spin_try_lock(spinlock))
+    while (TryLockSpinLock(spinlock))
         ;
 }
 
-void ThreadUtils::bj_spin_unlock(SpinLock *spinlock)
+void ThreadUtils::UnlockSpinLock(SpinLock *spinlock)
 {
-    // bj_spin_init 시에 '0'으로 설정
+    // InitSpinLock 시에 '0'으로 설정
     // old : 1
     // new : 0
 
     // 만약 spinlock 값이 '1'이었다면, '0' 로 update 되고 true 리턴
     //					  '0'이었다면, '0' 로 update 되지 않고 false 를 리턴
-    bj_atomic_compare_and_swap(&spinlock->flag, 1, 0);
+    CompareAndSwapAtomic(&spinlock->flag, 1, 0);
 }
 
-int ThreadUtils::bj_atomic_set(Atomic *a, int val)
+int ThreadUtils::SetAtomic(Atomic *a, int val)
 {
     // _InterlockedExchange : atomic exchange 연산을 수행하는 함수
     return _InterlockedExchange((long *)&a->value, val);
 }
 
-int ThreadUtils::bj_atomic_get(Atomic *a)
+int ThreadUtils::GetAtomic(Atomic *a)
 {
     int r;
 
@@ -382,28 +389,28 @@ int ThreadUtils::bj_atomic_get(Atomic *a)
     {
         r = a->value;
 
-        // bj_atomic_compare_and_swap(a, r, r)
+        // CompareAndSwapAtomic(a, r, r)
         // false ? : a->value 가 r 과 다르다는 의미
         // true  ? : a->value 가 r 과 같다는 의미
         // 여러 쓰레드에서 해당 atomic value 에 동시 접근한다고 생각해보자.
         // a->value 가 1이었다.
 
-        // A Thread : r = a->value; 까지만, 실행, bj_atomic_compare_and_swap 을 실행하기 전. r 은 1
+        // A Thread : r = a->value; 까지만, 실행, CompareAndSwapAtomic 을 실행하기 전. r 은 1
         // B Thread : 그 사이에 atomic add 를 함. a->value 는 2;
 
-        // 자. A Thread 는 bj_atomic_compare_and_swap 을 통해서 현재 atomic value 를 '1' 로 update 하고자 한다.
-        // A Thread : bj_atomic_compare_and_swap(a(2), r(1), r(1)) => 2와 1 은 다르다. 따라서 return 값은 false
+        // 자. A Thread 는 CompareAndSwapAtomic 을 통해서 현재 atomic value 를 '1' 로 update 하고자 한다.
+        // A Thread : CompareAndSwapAtomic(a(2), r(1), r(1)) => 2와 1 은 다르다. 따라서 return 값은 false
         // 다시 연산을 시도한다
 
         // r = a->value (2)
         // A Thread : atomic->value 를 '2' 로 update 시도한다.
-        // bj_atomic_compare_and_swap(a(2), r(2), r(2)) => 2와 2 은 같다. 따라서 return true
-    } while (!bj_atomic_compare_and_swap(a, r, r));
+        // CompareAndSwapAtomic(a(2), r(2), r(2)) => 2와 2 은 같다. 따라서 return true
+    } while (!CompareAndSwapAtomic(a, r, r));
 
     return r;
 }
 
-int ThreadUtils::bj_atomic_add(Atomic *a, int v)
+int ThreadUtils::AddAtomic(Atomic *a, int v)
 {
     /*
 	_InterlockedExchangeAdd 와 _InterlockedIncrement 의 차이점
@@ -419,19 +426,17 @@ int ThreadUtils::bj_atomic_add(Atomic *a, int v)
     return _InterlockedExchangeAdd((long *)&a->value, v);
 }
 
-int ThreadUtils::bj_atomic_increase(Atomic *a)
+int ThreadUtils::IncreaseAtomic(Atomic *a)
 {
     return _InterlockedIncrement((long *)&a->value);
 }
 
-int ThreadUtils::bj_atomic_decrease(Atomic *a)
+int ThreadUtils::DecreaseAtomic(Atomic *a)
 {
     return _InterlockedDecrement((long *)&a->value);
 }
 
-bool ThreadUtils::bj_atomic_compare_and_swap(Atomic *atomic,
-                                             int oldVal,
-                                             int newVal)
+bool ThreadUtils::CompareAndSwapAtomic(Atomic *atomic, int oldVal, int newVal)
 {
     // 기능    : 특정 값 ~ atomic 값을 비교한다. 만약 동일하다면 새로운 value 로 replace 한다.
     // 리턴 값 : compare and swap 연산 이전 값
@@ -445,7 +450,7 @@ bool ThreadUtils::bj_atomic_compare_and_swap(Atomic *atomic,
                                        (long)oldVal) == (long)oldVal;
 }
 
-ConditionVar *ThreadUtils::bj_condition_create()
+ConditionVar *ThreadUtils::CreateCondition()
 {
     ConditionVar *r = (ConditionVar *)malloc(sizeof(ConditionVar));
 
@@ -454,14 +459,14 @@ ConditionVar *ThreadUtils::bj_condition_create()
     return r;
 }
 
-void ThreadUtils::bj_condition_destroy(ConditionVar *condition)
+void ThreadUtils::DestroyCondition(ConditionVar *condition)
 {
     free(condition);
 }
 
-bool ThreadUtils::bj_condition_wait(ConditionVar *con,
-                                    CRIC_SECT *mutex,
-                                    uint32 time)
+bool ThreadUtils::WaitCondition(ConditionVar *con,
+                                CRIC_SECT *mutex,
+                                uint32 time)
 {
     /*
 	멀티쓰레드 환경에서, 다수의 쓰레드가 특정 condition 이 true 가 될때까지 기다리게 할 때 사용되는 함수이다.
@@ -474,17 +479,17 @@ bool ThreadUtils::bj_condition_wait(ConditionVar *con,
     return SleepConditionVariableCS(&con->handle, &mutex->handle, time);
 }
 
-void ThreadUtils::bj_condition_notify_one(ConditionVar *con)
+void ThreadUtils::NotifyOneCondtion(ConditionVar *con)
 {
     WakeConditionVariable(&con->handle);
 }
 
-void ThreadUtils::bj_condition_notify_all(ConditionVar *con)
+void ThreadUtils::NotifyAllCondtion(ConditionVar *con)
 {
     WakeAllConditionVariable(&con->handle);
 }
 
-Semaphore *ThreadUtils::bj_semaphore_create(int init_count)
+Semaphore *ThreadUtils::CreateCustomSemaphore(int init_count)
 {
     Semaphore *r;
     r = (Semaphore *)malloc(sizeof(Semaphore));
@@ -503,7 +508,7 @@ Semaphore *ThreadUtils::bj_semaphore_create(int init_count)
     return r;
 }
 
-void ThreadUtils::bj_semaphore_destroy(Semaphore *sema)
+void ThreadUtils::DestroyCustomSemaphore(Semaphore *sema)
 {
     if (sema != NULL)
     {
@@ -517,7 +522,7 @@ void ThreadUtils::bj_semaphore_destroy(Semaphore *sema)
     }
 }
 
-int ThreadUtils::bj_semaphore_signal(Semaphore *sema)
+int ThreadUtils::SignalCustomSemaphore(Semaphore *sema)
 {
     if (sema == NULL)
     {
@@ -541,7 +546,7 @@ int ThreadUtils::bj_semaphore_signal(Semaphore *sema)
     return 0;
 }
 
-int ThreadUtils::bj_semaphore_wait(Semaphore *sema, int timeout)
+int ThreadUtils::WaitSemaphore(Semaphore *sema, int timeout)
 {
     if (sema == NULL)
     {
@@ -552,7 +557,7 @@ int ThreadUtils::bj_semaphore_wait(Semaphore *sema, int timeout)
     DWORD millisec;
 
 
-    if (timeout == bj_WAIT_INFINITE)
+    if (timeout == THREAD_WAIT_INFINITE)
     {
         millisec = INFINITE;
     }
@@ -573,7 +578,7 @@ int ThreadUtils::bj_semaphore_wait(Semaphore *sema, int timeout)
         r = 0;
         break;
     case WAIT_TIMEOUT:
-        r = bj_WAIT_TIMEDOUT;
+        r = THREAD_WAIT_TIMEDOUT;
         break;
     default:
         THROW("WaitForSingleObject() failed");
@@ -606,12 +611,12 @@ bool SpinLock::TryLock()
     return !_InterlockedCompareExchange((long *)&flag.value,
                                         (long)0,
                                         (long)1) == (long)1;
-    // return !bj_atomic_compare_and_swap(&flag, 0, 1);
+    // return !CompareAndSwapAtomic(&flag, 0, 1);
 }
 
 void SpinLock::Lock()
 {
-    // bj_spin_try_lock 값이 false 를 리턴할 때까지 무한 반복
+    // TryLockSpinLock 값이 false 를 리턴할 때까지 무한 반복
     // 즉, spin_lock 값이 '1' 일때까지 무한 반복
     //     다른 쓰레드에서 해당 값을 '1' 로 설정할 때까지 무한 대기
     while (TryLock())
@@ -620,13 +625,15 @@ void SpinLock::Lock()
 
 void SpinLock::Unlock()
 {
-    // bj_spin_init 시에 '0'으로 설정
+    // InitSpinLock 시에 '0'으로 설정
     // old : 1
     // new : 0
 
     // 만약 spinlock 값이 '1'이었다면, '0' 로 update 되고 true 리턴
     //					  '0'이었다면, '0' 로 update 되지 않고 false 를 리턴
-    // bj_atomic_compare_and_swap(&flag.value, 1, 0);
+    // CompareAndSwapAtomic(&flag.value, 1, 0);
     _InterlockedCompareExchange((long *)&flag.value, (long)1, (long)0) ==
         (long)0;
 }
+
+} // namespace Hazel
