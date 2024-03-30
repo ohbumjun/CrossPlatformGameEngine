@@ -12,28 +12,6 @@ std::unordered_map<TypeId /*Pool ID*/, JobManager::JobContainerGroup>
     JobManager::m_JobContainerGroups;
 
 
-void JobManager::Initialize()
-{
-    // LvReflection::Regist<LvJobManager::JobPool>();
-
-    const size_t workerCount = ThreadUtils::GetThreadHardwareCount() - 1;
-
-    //Alloc LvParallelJobTask
-    // JobSystem* r = (JobSystem*)EngineAllocator::Allocate(
-    // 	DataType::RAWDATA,
-    // 	sizeof(JobSystem),
-    // 	"JobSystem"
-    // 	// LvJobSystem::TypeString()
-    // );
-
-    //Call Constructor (Thread Pool 정보를 초기화 한다.)
-    // m_MainJobSystem = new (r) JobSystem(workerCount);
-
-    m_ThreadPool = new ThreadPool(workerCount);
-
-    ThreadUtils::InitSpinLock(&m_SpinLock);
-}
-
 void JobManager::Finalize()
 {
     // ThreadPool 내의 Thread 들이 모두 종료될 때까지 기다린다.
@@ -42,9 +20,7 @@ void JobManager::Finalize()
     m_ThreadPool->~ThreadPool();
 
     free(m_ThreadPool);
-    // EngineAllocator::Free((void*)m_MainJobSystem);
 
-    //Distroy All LvEngineJob
     for (auto &jobGroupTable : m_JobContainerGroups)
     {
         JobContainerGroup &jobGroup = jobGroupTable.second;
@@ -52,28 +28,43 @@ void JobManager::Finalize()
         jobGroup.~JobContainerGroup();
 
         free(&jobGroup);
-        // EngineAllocator::Free((void*)&jobGroup);
     }
 
     m_JobContainerGroups.clear();
 }
 
-void JobManager::UnregistAll()
+void JobManager::Initialize()
 {
-    /*
-	if (false == _jobPools.ContainsKey(assemlyName)) return;
+    const size_t workerCount = ThreadUtils::GetThreadHardwareCount() - 1;
 
-	WaitAll();
-	
-	//Distroy All LvEngineJob
-	for (auto jobPool : _jobPools[assemlyName])
-	{
-		jobPool.value->~JobPool();
-		Lv::Engine::LvEngineAllocator::Free((void*)jobPool.value);
-	}
-	_jobPools[assemlyName].Clear();
-	*/
+    m_ThreadPool = new ThreadPool(workerCount);
+
+    ThreadUtils::InitSpinLock(&m_SpinLock);
 }
+
+void JobManager::ExecuteWithoutCtx(JobContainer *jobContainer)
+{
+    if (jobContainer)
+    {
+        ThreadUtils::LockSpinLock(&m_SpinLock);
+
+        jobContainer->prepareActiveJobs(1);
+
+        ThreadUtils::UnlockSpinLock(&m_SpinLock);
+
+        ParallelProcessor::Range range;
+        range.start = 0;
+        range.end = 1;
+
+        // 단 한개의 subJob 만을 생성하여 Thread Pool Job 을 실행한다.
+        if (JobContainer::JobManagerActiveJob *job =
+                jobContainer->getJobWithRange(0, range))
+        {
+            m_ThreadPool->AddPoolTask(job, nullptr);
+        }
+    }
+}
+
 
 void JobManager::Execute(JobContext &ctx, JobContainer *jobContainer)
 {
@@ -81,7 +72,7 @@ void JobManager::Execute(JobContext &ctx, JobContainer *jobContainer)
     {
         ThreadUtils::LockSpinLock(&m_SpinLock);
 
-        jobContainer->prepareJobs(1);
+        jobContainer->prepareActiveJobs(1);
 
         //Allocator가 Thread Safe하지 않아 lock필요
         ThreadUtils::UnlockSpinLock(&m_SpinLock);
@@ -99,29 +90,6 @@ void JobManager::Execute(JobContext &ctx, JobContainer *jobContainer)
     }
 }
 
-void JobManager::ExecuteWithoutCtx(JobContainer *jobContainer)
-{
-    if (jobContainer)
-    {
-        ThreadUtils::LockSpinLock(&m_SpinLock);
-
-        jobContainer->prepareJobs(1);
-
-        ThreadUtils::UnlockSpinLock(&m_SpinLock);
-
-        ParallelProcessor::Range range;
-        range.start = 0;
-        range.end = 1;
-
-        // 단 한개의 subJob 만을 생성하여 Thread Pool Job 을 실행한다.
-        if (JobContainer::JobManagerActiveJob *job =
-                jobContainer->getJobWithRange(0, range))
-        {
-            m_ThreadPool->AddPoolTask(job, nullptr);
-        }
-    }
-}
-
 void JobManager::ExecuteParallel(JobContext &ctx,
                                  JobContainer *jobContainer,
                                  size_t totalJobCount,
@@ -130,7 +98,7 @@ void JobManager::ExecuteParallel(JobContext &ctx,
     if (0 == totalJobCount || 0 == divideCount)
     {
         // 실행할 Job 이 없다면 그냥 리턴하게 한다.
-        jobContainer->setReadyRestState();
+        jobContainer->setToRestState();
         return;
     }
 
@@ -157,7 +125,7 @@ void JobManager::ExecuteParallel(JobContext &ctx,
         // 이때, 각 Thread 가 Execute 하는 함수는, JobContainer 에 정의된 함수이되
         // range 가 다르게 수행한다. 즉, 같은 함수를 실행하지만, 처리하는 데이터 범위가
         // 다르다는 것이다.
-        jobContainer->prepareJobs(threadCount); //TODO 개선필요
+        jobContainer->prepareActiveJobs(threadCount); //TODO 개선필요
 
         ThreadUtils::UnlockSpinLock(&m_SpinLock);
 
@@ -198,6 +166,31 @@ void JobManager::ExecuteParallel(JobContext &ctx,
         }
     }
 }
+void JobManager::WaitNoCtx(int32 taskCount)
+{
+    // taskCount 개수만큼의 일이 끝날 때까지 기다리기
+    m_ThreadPool->Wait(taskCount);
+}
+
+void JobManager::WaitAll(JobContext &ctx)
+{
+    int totalTaskCount = ThreadUtils::GetAtomic(&ctx.m_TotalTaskCount);
+
+    while (ThreadUtils::GetAtomic(&ctx.m_FinishTaskCount) < totalTaskCount)
+    {
+        totalTaskCount = ThreadUtils::GetAtomic(&ctx.m_TotalTaskCount);
+    }
+
+    ThreadUtils::AddAtomic(&ctx.m_FinishTaskCount, -totalTaskCount);
+    ThreadUtils::AddAtomic(&ctx.m_TotalTaskCount, -totalTaskCount);
+}
+
+void JobManager::WaitAllNoCtx()
+{
+    // 해당 ThreadPool 내의 모든 task 가 끝날 때까지 기다린다.
+    m_ThreadPool->WaitAllThreads();
+}
+
 
 void JobManager::ExecuteParallelNoCtx(JobContainer *job,
                                       size_t jobCount,
@@ -205,7 +198,7 @@ void JobManager::ExecuteParallelNoCtx(JobContainer *job,
 {
     if (0 == jobCount || 0 == divideCount)
     {
-        job->setReadyRestState();
+        job->setToRestState();
         return;
     }
 
@@ -219,7 +212,7 @@ void JobManager::ExecuteParallelNoCtx(JobContainer *job,
         //if SubJobs Count less than len than Create SubJobs
         ThreadUtils::LockSpinLock(&m_SpinLock);
 
-        job->prepareJobs(threadCount); //TODO 개선필요
+        job->prepareActiveJobs(threadCount); //TODO 개선필요
 
         ThreadUtils::UnlockSpinLock(&m_SpinLock);
 
@@ -254,31 +247,6 @@ void JobManager::Wait(JobContext &ctx, int32 taskCount)
 
     ThreadUtils::AddAtomic(&ctx.m_FinishTaskCount, -taskCount);
     ThreadUtils::AddAtomic(&ctx.m_TotalTaskCount, -taskCount);
-}
-
-void JobManager::WaitNoCtx(int32 taskCount)
-{
-    // taskCount 개수만큼의 일이 끝날 때까지 기다리기
-    m_ThreadPool->Wait(taskCount);
-}
-
-void JobManager::WaitAll(JobContext &ctx)
-{
-    int totalTaskCount = ThreadUtils::GetAtomic(&ctx.m_TotalTaskCount);
-
-    while (ThreadUtils::GetAtomic(&ctx.m_FinishTaskCount) < totalTaskCount)
-    {
-        totalTaskCount = ThreadUtils::GetAtomic(&ctx.m_TotalTaskCount);
-    }
-
-    ThreadUtils::AddAtomic(&ctx.m_FinishTaskCount, -totalTaskCount);
-    ThreadUtils::AddAtomic(&ctx.m_TotalTaskCount, -totalTaskCount);
-}
-
-void JobManager::WaitAllNoCtx()
-{
-    // 해당 ThreadPool 내의 모든 task 가 끝날 때까지 기다린다.
-    m_ThreadPool->WaitAllThreads();
 }
 
 

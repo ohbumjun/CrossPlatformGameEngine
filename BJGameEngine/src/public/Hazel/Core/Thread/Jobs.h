@@ -9,14 +9,14 @@ namespace Hazel
 {
 // Job Class 의 '멤버함수' 에 대한 Task class template
 // 해당 멤버함수는 리턴타입이 void, 인자는 void* 이다.
-class Job : public ThreadTask<void (Job::*)(void *)>
+class BaseJob : public ThreadTask<void (BaseJob::*)(void *)>
 {
-    typedef ThreadTask<void (Job::*)(void *)> BaseClass;
+    typedef ThreadTask<void (BaseJob::*)(void *)> BaseClass;
 
 public:
-    Job();
+    BaseJob();
 
-    virtual ~Job()
+    virtual ~BaseJob()
     {
     }
 
@@ -62,7 +62,7 @@ class JobContainer
 public:
     enum class State : int
     {
-        Work = 0,
+        RUN = 0,
         Rest = 1
     };
 
@@ -81,21 +81,21 @@ JobManager 의 ThreadPool 안에 있는 Thread 들이
 실행하는 실제 Job 들
 */
 private:
-    class JobManagerActiveJob : public Job
+    class JobManagerActiveJob : public BaseJob
     {
     public:
         JobManagerActiveJob(JobContainer *mainJob)
-            : Job(), m_JobContainer(mainJob)
+            : BaseJob(), m_JobContainer(mainJob)
         {
         }
 
         ~JobManagerActiveJob() override = default;
 
         /**
-			* @brief LvJobSystem에서 실행되는 메소드
-				- member변수 _range와 args를 이용해 LvEngineJob::Execute수행
+			* JobSystem에서 실행되는 함수
+				- member변수 _range와 args를 이용해 각 Job Class 의 Execute 함수를 수행한다.
+                - 이후 모든 일을 끝내면, REST 상태로 전환한다.
 				- 모든 subJob이 완료되면 mainJob을 Rest상태로 전환함
-			* @param args LvEngineJob::Execute를 수행하기 위한 데이터이지만 해당 클래스에선 사용하지 않음
 		*/
         void Execute(void *args) override;
 
@@ -104,7 +104,7 @@ private:
 			* @param range Job Group의 시작 끝 index를 가진 변수
 				- LvEngineJobSystem에서 설정해줌
 		*/
-        void SetRange(const ParallelProcessor::Range &range)
+        void SetExecuteRange(const ParallelProcessor::Range &range)
         {
             m_Range.start = range.start;
             m_Range.end = range.end;
@@ -112,7 +112,7 @@ private:
 
         static std::string TypeName()
         {
-            return "ActiveJob";
+            return "JobManagerActiveJob";
         }
 
     private:
@@ -123,25 +123,25 @@ private:
     /**
 		* @brief ActiveJob을 제작하는 메소드
 	*/
-    void addJobs();
+    void addActiveJobs();
     /**
 		* @brief LvEngineJobSystem에서 계산한 Group수보다 ActiveJob이 적을 경우 ActiveJob를 더 만드는 메소드
 		* @param len LvEngineJobSystem에서 계산한 Group수
 	*/
-    void prepareJobs(size_t len);
+    void prepareActiveJobs(size_t len);
     /**
-		* @brief ActiveJob의 _range를 초기화 하여 가져오는 메소드
-		* index :  index 가져올 ActiveJob의 index
-		* @param range 현재 ActiveJob가 수행할 Group의 시작, 끝 index
+		* ActiveJob의 _range를 초기화 하여 가져오는 함수
+		* - index 가져올 ActiveJob의 index
+		* - range 현재 ActiveJob가 수행할 Group의 시작, 끝 index
 	*/
     JobContainer::JobManagerActiveJob *getJobWithRange(
         size_t index,
         ParallelProcessor::Range &range);
 
     void setWorkCount(int value);
-    bool isAllSubJobDone();
-    bool setReadyRestState();
-    bool setWorkState();
+    bool isAllJobDone();
+    bool setToRestState();
+    bool setToRunState();
 
 private:
     std::vector<JobManagerActiveJob *> m_JobManagerJobs;

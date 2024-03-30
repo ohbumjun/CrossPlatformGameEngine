@@ -41,9 +41,9 @@ Atomic::Atomic(const Atomic &o){
 
 };
 
-int Atomic::GetValue()
+int Atomic::GetVal()
 {
-    return value;
+    return atomicVal;
 };
 
 void ThreadUtils::InitThread(ThreadInfo *thread,
@@ -292,6 +292,91 @@ unsigned int ThreadUtils::GetThreadHardwareCount()
     return std::thread::hardware_concurrency();
 }
 
+void ThreadUtils::InitSpinLock(SpinLock *spinlock)
+{
+    // 해당 spinlock 의 atomic value 를 0 으로 초기화
+    SetAtomic(&spinlock->flag, 0);
+}
+
+bool ThreadUtils::TryLockSpinLock(SpinLock *spinlock)
+{
+    // InitSpinLock 시에 '0'으로 설정
+    // old : 0
+    // new : 1
+
+    // 만약 spinlock 값이 '0'이었다면, '1' 로 update 되고 true 리턴
+    //					  '1'이었다면, '1' 로 update 되지 않고 false 를 리턴
+    return !CompareAndSwapAtomic(&spinlock->flag, 0, 1);
+}
+
+void ThreadUtils::LockSpinLock(SpinLock *spinlock)
+{
+    // TryLockSpinLock 값이 false 를 리턴할 때까지 무한 반복
+    // 즉, spin_lock 값이 '1' 일때까지 무한 반복
+    //     다른 쓰레드에서 해당 값을 '1' 로 설정할 때까지 무한 대기
+    while (TryLockSpinLock(spinlock))
+        ;
+}
+
+void ThreadUtils::UnlockSpinLock(SpinLock *spinlock)
+{
+    // InitSpinLock 시에 '0'으로 설정
+    // old : 1
+    // new : 0
+
+    // 만약 spinlock 값이 '1'이었다면, '0' 로 update 되고 true 리턴
+    //					  '0'이었다면, '0' 로 update 되지 않고 false 를 리턴
+    CompareAndSwapAtomic(&spinlock->flag, 1, 0);
+}
+
+SpinLock::SpinLock()
+{
+    Init();
+}
+
+void SpinLock::Init()
+{
+    _InterlockedExchange((long *)&flag.atomicVal, 0);
+}
+
+bool SpinLock::TryLock()
+{
+    // 기능    : 특정 값 ~ atomic 값을 비교한다. 만약 동일하다면 새로운 value 로 replace 한다.
+    // 리턴 값 : compare and swap 연산 이전 값
+    // newValue : replace 하고자 하는 값
+    // oldValue : 현재 atomic->value 와 비교하고자 하는 값.
+
+    // True  ? : newValu 로 update 성공
+    // False ? : update X
+
+    return !_InterlockedCompareExchange((long *)&flag.atomicVal,
+                                        (long)0,
+                                        (long)1) == (long)1;
+    // return !CompareAndSwapAtomic(&flag, 0, 1);
+}
+
+void SpinLock::Lock()
+{
+    // TryLockSpinLock 값이 false 를 리턴할 때까지 무한 반복
+    // 즉, spin_lock 값이 '1' 일때까지 무한 반복
+    //     다른 쓰레드에서 해당 값을 '1' 로 설정할 때까지 무한 대기
+    while (TryLock())
+        ;
+}
+
+void SpinLock::Unlock()
+{
+    // InitSpinLock 시에 '0'으로 설정
+    // old : 1
+    // new : 0
+
+    // 만약 spinlock 값이 '1'이었다면, '0' 로 update 되고 true 리턴
+    //					  '0'이었다면, '0' 로 update 되지 않고 false 를 리턴
+    // CompareAndSwapAtomic(&flag.value, 1, 0);
+    _InterlockedCompareExchange((long *)&flag.atomicVal, (long)1, (long)0) ==
+        (long)0;
+}
+
 CRIC_SECT *ThreadUtils::CreateCritSect()
 {
     CRIC_SECT *sect = (CRIC_SECT *)malloc(sizeof(CRIC_SECT));
@@ -338,47 +423,10 @@ void ThreadUtils::DestroyCritSect(CRIC_SECT *sect)
     free(sect);
 }
 
-void ThreadUtils::InitSpinLock(SpinLock *spinlock)
-{
-    // 해당 spinlock 의 atomic value 를 0 으로 초기화
-    SetAtomic(&spinlock->flag, 0);
-}
-
-bool ThreadUtils::TryLockSpinLock(SpinLock *spinlock)
-{
-    // InitSpinLock 시에 '0'으로 설정
-    // old : 0
-    // new : 1
-
-    // 만약 spinlock 값이 '0'이었다면, '1' 로 update 되고 true 리턴
-    //					  '1'이었다면, '1' 로 update 되지 않고 false 를 리턴
-    return !CompareAndSwapAtomic(&spinlock->flag, 0, 1);
-}
-
-void ThreadUtils::LockSpinLock(SpinLock *spinlock)
-{
-    // TryLockSpinLock 값이 false 를 리턴할 때까지 무한 반복
-    // 즉, spin_lock 값이 '1' 일때까지 무한 반복
-    //     다른 쓰레드에서 해당 값을 '1' 로 설정할 때까지 무한 대기
-    while (TryLockSpinLock(spinlock))
-        ;
-}
-
-void ThreadUtils::UnlockSpinLock(SpinLock *spinlock)
-{
-    // InitSpinLock 시에 '0'으로 설정
-    // old : 1
-    // new : 0
-
-    // 만약 spinlock 값이 '1'이었다면, '0' 로 update 되고 true 리턴
-    //					  '0'이었다면, '0' 로 update 되지 않고 false 를 리턴
-    CompareAndSwapAtomic(&spinlock->flag, 1, 0);
-}
-
 int ThreadUtils::SetAtomic(Atomic *a, int val)
 {
     // _InterlockedExchange : atomic exchange 연산을 수행하는 함수
-    return _InterlockedExchange((long *)&a->value, val);
+    return _InterlockedExchange((long *)&a->atomicVal, val);
 }
 
 int ThreadUtils::GetAtomic(Atomic *a)
@@ -387,7 +435,7 @@ int ThreadUtils::GetAtomic(Atomic *a)
 
     do
     {
-        r = a->value;
+        r = a->atomicVal;
 
         // CompareAndSwapAtomic(a, r, r)
         // false ? : a->value 가 r 과 다르다는 의미
@@ -423,17 +471,17 @@ int ThreadUtils::AddAtomic(Atomic *a, int v)
 	- 기능 : 1 만 증가
 	- 리턴 : add 전 origin value
 	*/
-    return _InterlockedExchangeAdd((long *)&a->value, v);
+    return _InterlockedExchangeAdd((long *)&a->atomicVal, v);
 }
 
 int ThreadUtils::IncreaseAtomic(Atomic *a)
 {
-    return _InterlockedIncrement((long *)&a->value);
+    return _InterlockedIncrement((long *)&a->atomicVal);
 }
 
 int ThreadUtils::DecreaseAtomic(Atomic *a)
 {
-    return _InterlockedDecrement((long *)&a->value);
+    return _InterlockedDecrement((long *)&a->atomicVal);
 }
 
 bool ThreadUtils::CompareAndSwapAtomic(Atomic *atomic, int oldVal, int newVal)
@@ -445,26 +493,26 @@ bool ThreadUtils::CompareAndSwapAtomic(Atomic *atomic, int oldVal, int newVal)
 
     // True  ? : newValu 로 update 성공
     // False ? : update X
-    return _InterlockedCompareExchange((long *)&atomic->value,
+    return _InterlockedCompareExchange((long *)&atomic->atomicVal,
                                        (long)newVal,
                                        (long)oldVal) == (long)oldVal;
 }
 
-ConditionVar *ThreadUtils::CreateCondition()
+ConditionVariable *ThreadUtils::CreateCondition()
 {
-    ConditionVar *r = (ConditionVar *)malloc(sizeof(ConditionVar));
+    ConditionVariable *r = (ConditionVariable *)malloc(sizeof(ConditionVariable));
 
     InitializeConditionVariable(&r->handle);
 
     return r;
 }
 
-void ThreadUtils::DestroyCondition(ConditionVar *condition)
+void ThreadUtils::DestroyCondition(ConditionVariable *condition)
 {
     free(condition);
 }
 
-bool ThreadUtils::WaitCondition(ConditionVar *con,
+bool ThreadUtils::WaitCondition(ConditionVariable *con,
                                 CRIC_SECT *mutex,
                                 uint32 time)
 {
@@ -479,12 +527,12 @@ bool ThreadUtils::WaitCondition(ConditionVar *con,
     return SleepConditionVariableCS(&con->handle, &mutex->handle, time);
 }
 
-void ThreadUtils::NotifyOneCondtion(ConditionVar *con)
+void ThreadUtils::NotifyOneCondtion(ConditionVariable *con)
 {
     WakeConditionVariable(&con->handle);
 }
 
-void ThreadUtils::NotifyAllCondtion(ConditionVar *con)
+void ThreadUtils::NotifyAllCondtion(ConditionVariable *con)
 {
     WakeAllConditionVariable(&con->handle);
 }
@@ -586,54 +634,6 @@ int ThreadUtils::WaitSemaphore(Semaphore *sema, int timeout)
     }
 
     return r;
-}
-
-SpinLock::SpinLock()
-{
-    Init();
-}
-
-void SpinLock::Init()
-{
-    _InterlockedExchange((long *)&flag.value, 0);
-}
-
-bool SpinLock::TryLock()
-{
-    // 기능    : 특정 값 ~ atomic 값을 비교한다. 만약 동일하다면 새로운 value 로 replace 한다.
-    // 리턴 값 : compare and swap 연산 이전 값
-    // newValue : replace 하고자 하는 값
-    // oldValue : 현재 atomic->value 와 비교하고자 하는 값.
-
-    // True  ? : newValu 로 update 성공
-    // False ? : update X
-
-    return !_InterlockedCompareExchange((long *)&flag.value,
-                                        (long)0,
-                                        (long)1) == (long)1;
-    // return !CompareAndSwapAtomic(&flag, 0, 1);
-}
-
-void SpinLock::Lock()
-{
-    // TryLockSpinLock 값이 false 를 리턴할 때까지 무한 반복
-    // 즉, spin_lock 값이 '1' 일때까지 무한 반복
-    //     다른 쓰레드에서 해당 값을 '1' 로 설정할 때까지 무한 대기
-    while (TryLock())
-        ;
-}
-
-void SpinLock::Unlock()
-{
-    // InitSpinLock 시에 '0'으로 설정
-    // old : 1
-    // new : 0
-
-    // 만약 spinlock 값이 '1'이었다면, '0' 로 update 되고 true 리턴
-    //					  '0'이었다면, '0' 로 update 되지 않고 false 를 리턴
-    // CompareAndSwapAtomic(&flag.value, 1, 0);
-    _InterlockedCompareExchange((long *)&flag.value, (long)1, (long)0) ==
-        (long)0;
 }
 
 } // namespace Hazel

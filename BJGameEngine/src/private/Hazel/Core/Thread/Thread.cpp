@@ -28,7 +28,7 @@ Thread::~Thread()
     ThreadUtils::DestroyCritSect(m_CricSect);
 }
 
-void Thread::Start(Func runnable, void *userData)
+void Thread::StartThread(Func runnable, void *userData)
 {
     m_Func = runnable;
     m_ArgData = userData;
@@ -39,7 +39,7 @@ void Thread::Start(Func runnable, void *userData)
     ThreadUtils::RunThread(&m_Info, Invoke, this);
 }
 
-void Thread::Notify()
+void Thread::NotifyThread()
 {
     // 여기에 왜 critical section lock 을 거는 거지..?
     // 2개 이상의 쓰레드가 일을 동시에 끝내서, notify 를 하려고 한다.
@@ -55,7 +55,7 @@ void Thread::Notify()
 }
 
 // 해당 m_Handle 에 대응되는 쓰레드를 종료시키는 함수
-void Thread::Stop()
+void Thread::StopThread()
 {
     ThreadUtils::LockCritSect(m_CricSect);
     ThreadUtils::SetAtomic(&m_ThreadState, ThreadState::STOPPED);
@@ -65,7 +65,7 @@ void Thread::Stop()
     ThreadUtils::UnlockCritSect(m_CricSect);
 }
 
-void Thread::Wait()
+void Thread::WaitThread()
 {
     ThreadUtils::LockCritSect(m_CricSect);
 
@@ -95,7 +95,7 @@ void Thread::Wait()
     ThreadUtils::UnlockCritSect(m_CricSect);
 }
 
-void Thread::Join()
+void Thread::JoinThread()
 {
     ThreadUtils::SetAtomic(&m_ThreadState, ThreadState::WAIT_SLEEP_JOIN);
 
@@ -105,17 +105,17 @@ void Thread::Join()
     }
 }
 
-const char *Thread::GetName()
+const char *Thread::GetThreadName()
 {
     return m_Info.name;
 }
 
-void Thread::SetName(char *name)
+void Thread::SetThreadName(char *name)
 {
     m_Info.name = name;
 }
 
-void Thread::SetName(const char *name)
+void Thread::SetThreadName(const char *name)
 {
     m_Info.name = const_cast<char *>(name);
 }
@@ -144,7 +144,7 @@ void Thread::SetAffinity(int affinity)
     ThreadUtils::SetThreadAffinity(&m_Info, affinity);
 }
 
-void Thread::Sleep(unsigned long milliseconds)
+void Thread::SleepThread(unsigned long milliseconds)
 {
     ThreadUtils::SleepThread(milliseconds);
 }
@@ -159,12 +159,12 @@ void *Thread::Invoke(void *pThis)
     lv_thread_set_name(&t->GetHandle(), t->GetName());
 #endif
 
-    t->Run(t->m_ArgData);
+    t->RunThread(t->m_ArgData);
 
     return nullptr;
 }
 
-void Thread::Run(void *args)
+void Thread::RunThread(void *args)
 {
     ThreadUtils::SetAtomic(&m_ThreadState, ThreadState::RUNNING);
 

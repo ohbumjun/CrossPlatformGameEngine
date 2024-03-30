@@ -4,9 +4,9 @@
 
 namespace Hazel
 {
-Job::Job()
+BaseJob::BaseJob()
     // &Job::Execute 를 넘겨주면 MemberFuncPointer m_MemberFunc 에 호출할 함수를 설정해주는 것.
-    : BaseClass(this, &Job::Execute)
+    : BaseClass(this, &BaseJob::Execute)
 {
 }
 
@@ -44,25 +44,17 @@ JobContainer::~JobContainer()
     {
         task->~JobManagerActiveJob();
         free(task);
-        // EngineAllocator::Free(task);
     }
 }
 
-void JobContainer::addJobs()
+void JobContainer::addActiveJobs()
 {
-    // JobSystemJob *r =
-    //     (JobSystemJob *)EngineAllocator::Allocate(DataType::RAWDATA,
-    //                                               sizeof(ActiveJob),
-    //                                               JobSystemJob::TypeName());
-    //
-    // JobSystemJob *subJob = new (r) JobSystemJob(this);
-
     JobManagerActiveJob *subJob = new JobManagerActiveJob(this);
 
     m_JobManagerJobs.push_back(subJob);
 }
 
-void JobContainer::prepareJobs(size_t len)
+void JobContainer::prepareActiveJobs(size_t len)
 {
     setWorkCount((int)len);
 
@@ -74,7 +66,7 @@ void JobContainer::prepareJobs(size_t len)
     // 총 수행할 work 개수만큼의 subJob 들을 추가적으로 만들어낸다.
     for (size_t i = 0; i < len - prevSubTaskNum; ++i)
     {
-        addJobs();
+        addActiveJobs();
     }
 }
 
@@ -84,7 +76,6 @@ JobContainer::JobManagerActiveJob *JobContainer::getJobWithRange(
 {
     if (m_JobManagerJobs.size() <= index)
     {
-        // assert(false, "warnning : LvEngineJob::getSubJob - _subJobs length < index");
         assert(false);
         return nullptr;
     }
@@ -93,7 +84,7 @@ JobContainer::JobManagerActiveJob *JobContainer::getJobWithRange(
     // getSubJob 함수를 호출할 때마다 range 라는 변수를 새로 세팅해준다.
     // 이 의미는, getSubJob 함수를 호출할 때마다 해당 Job 이 실행할 함수 및 범위를
     // 새로 매번 설정해준다는 것이다.
-    m_JobManagerJobs[index]->SetRange(range);
+    m_JobManagerJobs[index]->SetExecuteRange(range);
 
     return m_JobManagerJobs[index];
 }
@@ -117,9 +108,9 @@ void JobContainer::JobManagerActiveJob::Execute(void *args)
     // 각 ActiveJob 들이 일을 끝낼 때마다 m_WorkCount 를 1 씩 감소시킨다.
     // 0 이 된다는 것은, 더이상 할일이 남아있지 않다는 것이므로
     // 다시 mainJob 을 rest 상태로 만든다.
-    if (m_JobContainer->isAllSubJobDone())
+    if (m_JobContainer->isAllJobDone())
     {
-        m_JobContainer->setReadyRestState();
+        m_JobContainer->setToRestState();
     }
 }
 
@@ -134,7 +125,7 @@ void JobContainer::setWorkCount(int value)
     ThreadUtils::SetAtomic(&m_WorkCount, value);
 }
 
-bool JobContainer::isAllSubJobDone()
+bool JobContainer::isAllJobDone()
 {
     // m_WorkCount 를 1 감소시킨다.
     int leftWorkCount = ThreadUtils::DecreaseAtomic(&m_WorkCount);
@@ -151,13 +142,13 @@ bool JobContainer::isAllSubJobDone()
     return false;
 }
 
-bool JobContainer::setReadyRestState()
+bool JobContainer::setToRestState()
 {
     // REST 상태로 다시 바꿔준다. 그리고 이전 상태값을 리턴해준다.
     JobContainer::State beforeState = (JobContainer::State)
         ThreadUtils::SetAtomic(&m_WorkingFlag, (int)JobContainer::State::Rest);
 
-    if (beforeState == JobContainer::State::Work)
+    if (beforeState == JobContainer::State::RUN)
     {
         return true;
     }
@@ -165,10 +156,10 @@ bool JobContainer::setReadyRestState()
     return false;
 }
 
-bool JobContainer::setWorkState()
+bool JobContainer::setToRunState()
 {
     JobContainer::State beforeState = (JobContainer::State)
-        ThreadUtils::SetAtomic(&m_WorkingFlag, (int)JobContainer::State::Work);
+        ThreadUtils::SetAtomic(&m_WorkingFlag, (int)JobContainer::State::RUN);
 
     if (beforeState == JobContainer::State::Rest)
     {

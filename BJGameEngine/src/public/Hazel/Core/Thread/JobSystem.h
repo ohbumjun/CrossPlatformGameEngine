@@ -4,7 +4,7 @@
 #include "Hazel/Core/Reflection/TypeId.h"
 #include "Hazel/Core/Reflection/Reflection.h"
 #include "Jobs.h"
-// #include "../Allocator/EngineAllocator.h"
+
 namespace Hazel
 {
 class JobContext
@@ -32,14 +32,21 @@ class JobManager
 public:
     friend class JobContext;
 
-    static void Initialize();
-    static void Finalize();
-    static void UnregistAll();
     template <class T,
               typename std::enable_if<
                   std::is_base_of<JobContainer, T>::value>::type * = nullptr>
     static T *MakeThreadJob();
+    static void Finalize();
+    static void Initialize();
 
+    /**
+		* EngineJob 객체들의 실행 메소드
+		* 
+		* (세부사항)
+		* JobContainer 안에 있는 ActiveJob 하나를 JobManager 의
+		* ThreadPool 에게 시킨다.
+	*/
+    static void ExecuteWithoutCtx(JobContainer *job);
     /**
 		* EngineJob 의 실행 메소드
 		* ctx : job 을 실행하는 맥락 ex) total cnt, complete cnt 등
@@ -52,31 +59,31 @@ public:
     static void Execute(JobContext &ctx, JobContainer *jobContainer);
 
     /**
-		* EngineJob 객체들의 실행 메소드
-		* 
-		* (세부사항)
-		* JobContainer 안에 있는 ActiveJob 하나를 JobManager 의
-		* ThreadPool 에게 시킨다.
-	*/
-    static void ExecuteWithoutCtx(JobContainer *job);
-
-    /**
-		* @brief LvEngineJob을 jobCount, groupCount를 이용해 Job을 나눠서 Parallel하게 실행 메소드
-			- 주의 : Dispatch 실행시 Job수가 증가하여 Wait(size_t taskCount)로 대기시 무한대기, 데이타 레이스 발생가능
-		- jobContainer	: Thread 들에게 할당할 ActiveJob 들을 가지고 있는 Container
-		-  totalJobCount : 실행할 전체 Job 수
-		* @param divideCount 하나의 Job Group별 최대 갯수
-	*/
-    static void ExecuteParallel(JobContext &ctx,
-                                JobContainer *jobContainer,
-                                size_t totalJobCount,
-                                size_t divideCount);
-    /**
 		* ExecuteParallel와 동일. 단, Wait 조건이 Ctx 가 아니라, ThreadPool 의 cnt
 	*/
     static void ExecuteParallelNoCtx(JobContainer *job,
                                      size_t jobCount,
                                      size_t divideCount);
+    /**
+		*LvEngineJob을 jobCount, groupCount를 이용해 Job을 나눠서 Parallel하게 실행 메소드
+			- 주의 : Dispatch 실행시 Job수가 증가하여 Wait(size_t taskCount)로 대기시 무한대기, 데이타 레이스 발생가능
+		- jobContainer	: Thread 들에게 할당할 ActiveJob 들을 가지고 있는 Container
+		-  totalJobCount : 실행할 전체 Job 수
+		* @param divideCount 하나의 Job Group별 최대 갯수
+	*/
+    static void ExecuteParallel(JobContext &jobContext,
+                                JobContainer *jobContainer,
+                                size_t totalJobCount,
+                                size_t divideCount);
+   
+    /**
+		* 위 함수와 동일, 단 Thread Pool 의 finishcnt 가 taskCount 될때까지
+	*/
+    static void WaitNoCtx(int32 taskCount);
+    /**
+		* @brief ThreadPool 내의 모든 Job이 끝날 때까지 기다리기
+	*/
+    static void WaitAllNoCtx();
 
     /**
 		* Job 실행을 기다리는 함수
@@ -84,17 +91,10 @@ public:
 	*/
     static void Wait(JobContext &ctx, int32 taskCount);
     /**
-		* 위 함수와 동일, 단 Thread Pool 의 finishcnt 가 taskCount 될때까지
-	*/
-    static void WaitNoCtx(int32 taskCount);
-    /**
 		* ttx total cnt 만큼의 job 이 끝날 때까지 기다리기 
 	*/
     static void WaitAll(JobContext &ctx);
-    /**
-		* @brief ThreadPool 내의 모든 Job이 끝날 때까지 기다리기
-	*/
-    static void WaitAllNoCtx();
+    
 
 private:
     // 같은 종류의 JobContainer 들을 모아둔 Class
@@ -105,11 +105,6 @@ private:
         {
             m_Type = jobType;
 
-            // if (false == LvReflection::HasRegist(_type))
-            // {
-            // 	LV_LOG(crash, "JobPool LvTypeId jobType is not regist type");
-            // }
-
             ThreadUtils::InitSpinLock(&m_SpinLock);
         }
 
@@ -117,20 +112,10 @@ private:
         {
             size_t size = Reflection::GetTypeSize(m_Type);
 
-            char *buff = nullptr;
-
-            // 미리 제작한 job Free
             for (JobContainer *jobContainer : m_JobContainers)
             {
-                // buff = reinterpret_cast<char*>(job);
-                // for (uint32 i = 0; i < m_JobIncreaseCount; ++i)
-                // {
-                // 	// Call Constructor
-                // 	// LvReflection::Deconstruct(m_Type, buff + (size * i));
-                // }
                 jobContainer->~JobContainer();
 
-                // EngineAllocator::Free(job);
                 free(jobContainer);
             }
         }
@@ -198,10 +183,7 @@ private:
                     sizeof(T),
                     Reflection::GetTypeName<T>());
 
-                //Call Constructor
                 T *newJob = new (jobMemory) T();
-
-                // LvReflection::Construct(_type, &jobSources[i]);
 
                 m_JobContainers.push_back(newJob);
             }
@@ -211,7 +193,7 @@ private:
 
         inline bool isJobWorkPossible(JobContainer *job)
         {
-            return job->setWorkState();
+            return job->setToRunState();
         }
 
         // 늘릴 때 해당 데이터에 접근 불가능하게 해야함

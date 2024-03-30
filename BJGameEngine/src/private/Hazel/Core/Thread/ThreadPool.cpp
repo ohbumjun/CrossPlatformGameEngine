@@ -11,13 +11,10 @@ ThreadPoolWorker::ThreadPoolWorker(ThreadPool &pool, int index)
 
     m_Name = workerName;
 
-    m_Thread.SetName(const_cast<char *>(m_Name.c_str()));
-#if USE_CTHREAD
-    lv_thread_init(&thread, &LvWorker::threadExecute, &thread);
-#else
+    m_Thread.SetThreadName(const_cast<char *>(m_Name.c_str()));
+
     // Thread 가, Worker의 Execute 함수를 실행할 수 있게 한다.
-    m_Thread.Start(&ThreadPoolWorker::Execute, this);
-#endif
+    m_Thread.StartThread(&ThreadPoolWorker::Execute, this);
 }
 
 ThreadPoolWorker::~ThreadPoolWorker()
@@ -25,10 +22,10 @@ ThreadPoolWorker::~ThreadPoolWorker()
 }
 
 // Worker 들이 호출하는 함수
-void ThreadPoolWorker::executeThread(void *arg)
+void ThreadPoolWorker::ExecuteThread(void *arg)
 {
     void *taskArg = nullptr;
-    Task *task = nullptr;
+    PoolTask *task = nullptr;
 
     while (m_ThreadPool->loadTaskFromPool(task, taskArg))
     {
@@ -45,13 +42,13 @@ void ThreadPoolWorker::executeThread(void *arg)
 void ThreadPoolWorker::Finalize()
 {
     // 둘의 차이가 뭐지 ? 우선 WaitForSingleObjectEx 의 함수 의도를 정확하게 알아야 한다.
-    m_Thread.Join();
-    m_Thread.Stop();
+    m_Thread.JoinThread();
+    m_Thread.StopThread();
 }
 
 const char *ThreadPoolWorker::GetName()
 {
-    return m_Thread.GetName();
+    return m_Thread.GetThreadName();
 }
 
 Thread *ThreadPoolWorker::GetThread()
@@ -88,7 +85,7 @@ ThreadPool::~ThreadPool()
     ThreadUtils::DestroyCondition(m_Condition);
 }
 
-void ThreadPool::AddPoolTask(Task *t, void *arg)
+void ThreadPool::AddPoolTask(PoolTask *t, void *arg)
 {
     ThreadUtils::LockCritSect(m_CricSect);
     ThreadUtils::AddAtomic(&m_TotalTaskCount, 1);
@@ -163,7 +160,7 @@ void ThreadPool::createPoolWorker(size_t count, const char *name)
 
 // Workder 들이 호출하는 함수 이다.
 // 정확하게는, Worker 안에 있는 Thread 들이 호출하는 함수
-bool ThreadPool::loadTaskFromPool(Task *&out, void *&outArg)
+bool ThreadPool::loadTaskFromPool(PoolTask *&out, void *&outArg)
 {
     if (m_IsStop)
     {

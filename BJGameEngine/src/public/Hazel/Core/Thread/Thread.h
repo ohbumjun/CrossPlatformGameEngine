@@ -16,12 +16,12 @@ public:
 
     ~Thread();
 
-    void Start(Func runnable = nullptr, void *userData = nullptr);
+    void StartThread(Func procedure = nullptr, void *userData = nullptr);
 
     template <typename Functor, typename... TArgs>
-    void Start(Functor &&func, TArgs... args)
+    void StartThread(Functor &&func, TArgs... args)
     {
-        struct Param
+        struct FuncParam
         {
             Thread *thread;
 
@@ -29,7 +29,9 @@ public:
 
             Functor functor;
 
-            Param(Functor functor, Thread *thread, std::tuple<TArgs...> args)
+            FuncParam(Functor functor,
+                      Thread *thread,
+                      std::tuple<TArgs...> args)
                 : functor(functor), args(args), thread(thread)
             {
             }
@@ -37,7 +39,7 @@ public:
 
         // Param 포인터를 인자로 받아서, 함수 포인터를 실행해주는 함수
         void (*Procedure)(void *) = [](void *p) {
-            Param *parameters = static_cast<Param *>(p);
+            FuncParam *parameters = static_cast<FuncParam *>(p);
 
             HZ_CORE_ERROR("To Implement");
             // Invoker::Invoke(parameters->functor, parameters->args);
@@ -45,7 +47,7 @@ public:
             delete parameters;
         };
 
-        Param *param = new Param(func, this, std::make_tuple(args...));
+        FuncParam *param = new FuncParam(func, this, std::make_tuple(args...));
 
         m_Func = Procedure;
         m_ArgData = param;
@@ -54,22 +56,22 @@ public:
         ThreadUtils::RunThread(&m_Info, Invoke, this);
     }
 
-    void Notify();
+    void NotifyThread();
 
-    void Stop();
+    void StopThread();
 
-    void Wait();
+    void WaitThread();
 
     // 해당 Thread 의 일을 끝내는 함수이다
     // ex) Worker::~Worker 함수에서 호출된다.
-    void Join();
+    void JoinThread();
 
-    inline ThreadState GetState()
+    inline ThreadState GetThreadState()
     {
         return static_cast<ThreadState>(ThreadUtils::GetAtomic(&m_ThreadState));
     }
 
-    inline void SetState(ThreadState state)
+    inline void SetThreadState(ThreadState state)
     {
         ThreadUtils::SetAtomic(&m_ThreadState, static_cast<int>(state));
     }
@@ -79,17 +81,11 @@ public:
         return m_Info;
     }
 
-    const char *GetName();
+    const char *GetThreadName();
+   
+    void SetThreadName(char *name);
 
-    /**
-	 * @brief Thread 이름을 지정합니다. Start 하기 전에 지정하여야 하며 이후 지정할 수 없습니다.
-	 */
-    void SetName(char *name);
-
-    /**
-	 * @brief Thread 이름을 지정합니다. Start 하기 전에 지정하여야 하며 이후 지정할 수 없습니다.
-	 */
-    void SetName(const char *name);
+    void SetThreadName(const char *name);
 
     unsigned long GetThreadID();
 
@@ -99,14 +95,14 @@ public:
 
     void SetAffinity(int affinity);
 
-    static void Sleep(unsigned long milliseconds);
+    static void SleepThread(unsigned long milliseconds);
 
     inline CRIC_SECT *GetMutex()
     {
         return m_CricSect;
     }
 
-    inline ConditionVar *GetCondition()
+    inline ConditionVariable *GetCondition()
     {
         return m_Condition;
     }
@@ -116,11 +112,9 @@ private:
 
     ThreadInfo m_Info;
 
-    // ThreadPool->Worker 에 의해 관리되는 Thread 들의 경우, 아래의 m_CricSect, m_Condition 변수는
-    // ThreadPool 로부터 온 변수들이어야 하는 것 아닌가..?
     CRIC_SECT *m_CricSect;
 
-    ConditionVar *m_Condition;
+    ConditionVariable *m_Condition;
 
     // 해당 Thread 가 호출할 콜백함수
     Func m_Func;
@@ -133,6 +127,6 @@ private:
 
     static void *Invoke(void *args);
 
-    virtual void Run(void *args);
+    virtual void RunThread(void *args);
 };
 } // namespace Hazel
