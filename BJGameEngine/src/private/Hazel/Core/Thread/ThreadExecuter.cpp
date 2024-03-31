@@ -105,8 +105,6 @@ void ThreadExecuterManager::Finalize()
         releaseExecuter(releaseIds[i]);
     }
 
-    delete m_MainThreadHandle;
-
     ThreadUtils::DestroyCritSect(s_mutex);
 }
 
