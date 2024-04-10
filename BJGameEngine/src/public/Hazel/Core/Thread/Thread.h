@@ -42,7 +42,8 @@ public:
             FuncParam *parameters = static_cast<FuncParam *>(p);
 
             HZ_CORE_ERROR("To Implement");
-            // Invoker::Invoke(parameters->functor, parameters->args);
+            
+            Invoker::Invoke(parameters->functor, parameters->args);
 
             delete parameters;
         };
