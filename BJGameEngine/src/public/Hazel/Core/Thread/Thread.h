@@ -2,6 +2,7 @@
 
 #include "ThreadUtil.h"
 #include "Hazel/Utils/Log.h"
+#include "Hazel/Utils/FunctorInvoker.h"
 
 namespace Hazel
 {
@@ -41,14 +42,16 @@ public:
         void (*Procedure)(void *) = [](void *p) {
             FuncParam *parameters = static_cast<FuncParam *>(p);
 
-            HZ_CORE_ERROR("To Implement");
-            
-            Invoker::Invoke(parameters->functor, parameters->args);
+            FuctorInvoker::InvokeFunctor(parameters->functor, parameters->args);
 
             delete parameters;
         };
 
-        FuncParam *param = new FuncParam(func, this, std::make_tuple(args...));
+        // 참고 : args 도 universal ref 로 받고, move 혹은 const & 형태로
+        // 넘겨줘야 하는 거 아닌가 ?
+       
+		FuncParam *param = new FuncParam(func, this, std::make_tuple(args...));
+
 
         m_Func = Procedure;
         m_ArgData = param;

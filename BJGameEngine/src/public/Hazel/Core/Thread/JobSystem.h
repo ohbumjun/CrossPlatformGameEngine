@@ -104,8 +104,6 @@ private:
         JobContainerGroup(TypeId jobType) : m_JobIncreaseCount(5)
         {
             m_Type = jobType;
-
-            ThreadUtils::InitSpinLock(&m_SpinLock);
         }
 
         virtual ~JobContainerGroup()
@@ -152,8 +150,6 @@ private:
         template <class T>
         T *findRestJobContainer()
         {
-            ThreadUtils::LockSpinLock(&m_GroupLock);
-
             //찾기 - 임계영역 _allocatedJobsArray
             for (JobContainer *engineJob : m_Jobs)
             {
@@ -164,17 +160,12 @@ private:
                     return (T *)engineJob;
                 }
             }
-
-            ThreadUtils::UnlockSpinLock(&m_GroupLock);
-
             return nullptr;
         }
 
         template <class T>
         void increaseJobContainer()
         {
-            ThreadUtils::InitSpinLock(&m_GroupLock);
-
             //사용가능한 Task 미리 제작 임계영역 _allocatedJobsArray
             for (uint32 i = 0; i < m_JobIncreaseCount; ++i)
             {
@@ -187,8 +178,6 @@ private:
 
                 m_JobContainers.push_back(newJob);
             }
-
-            ThreadUtils::UnlockSpinLock(&m_SpinLock);
         }
 
         inline bool isJobWorkPossible(JobContainer *job)
@@ -199,14 +188,11 @@ private:
         // 늘릴 때 해당 데이터에 접근 불가능하게 해야함
         std::vector<JobContainer *> m_JobContainers;
 
-        // 각 JobContainerGroup 마다, 동기화를 진행해주고자 한다.
-        SpinLock m_GroupLock;
         const uint32 m_JobIncreaseCount;
         TypeId m_Type = 0;
     };
 
     static ThreadPool *m_ThreadPool;
-    static SpinLock m_SpinLock;
     static std::unordered_map<TypeId /*Pool ID*/, JobContainerGroup>
         m_JobContainerGroups;
 };

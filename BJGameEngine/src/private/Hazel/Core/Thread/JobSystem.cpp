@@ -7,7 +7,6 @@
 namespace Hazel
 {
 ThreadPool *JobManager::m_ThreadPool;
-SpinLock JobManager::m_SpinLock;
 std::unordered_map<TypeId /*Pool ID*/, JobManager::JobContainerGroup>
     JobManager::m_JobContainerGroups;
 
@@ -38,19 +37,13 @@ void JobManager::Initialize()
     const size_t workerCount = ThreadUtils::GetThreadHardwareCount() - 1;
 
     m_ThreadPool = new ThreadPool(workerCount);
-
-    ThreadUtils::InitSpinLock(&m_SpinLock);
 }
 
 void JobManager::ExecuteWithoutCtx(JobContainer *jobContainer)
 {
     if (jobContainer)
     {
-        ThreadUtils::LockSpinLock(&m_SpinLock);
-
         jobContainer->prepareActiveJobs(1);
-
-        ThreadUtils::UnlockSpinLock(&m_SpinLock);
 
         ParallelProcessor::Range range;
         range.start = 0;
@@ -70,12 +63,7 @@ void JobManager::Execute(JobContext &ctx, JobContainer *jobContainer)
 {
     if (jobContainer)
     {
-        ThreadUtils::LockSpinLock(&m_SpinLock);
-
         jobContainer->prepareActiveJobs(1);
-
-        //Allocator가 Thread Safe하지 않아 lock필요
-        ThreadUtils::UnlockSpinLock(&m_SpinLock);
 
         ParallelProcessor::Range scope;
         scope.start = 0;
@@ -116,9 +104,6 @@ void JobManager::ExecuteParallel(JobContext &ctx,
         const size_t threadCount = remain > 0 ? totalJobCount / divideCount + 1
                                               : totalJobCount / divideCount;
 
-        //if SubJobs Count less than len than Create SubJobs
-        ThreadUtils::LockSpinLock(&m_SpinLock);
-
         // threadCount 개수만큼의 Job 을 준비한다.
         // 예를 들어, thread 가 3개라면, job 도 3개를 준비한다.
         // 이를 통해, 각 thread 가 하나의 Job을 수행하는 개념이다.
@@ -126,8 +111,6 @@ void JobManager::ExecuteParallel(JobContext &ctx,
         // range 가 다르게 수행한다. 즉, 같은 함수를 실행하지만, 처리하는 데이터 범위가
         // 다르다는 것이다.
         jobContainer->prepareActiveJobs(threadCount); //TODO 개선필요
-
-        ThreadUtils::UnlockSpinLock(&m_SpinLock);
 
         //Add ParallelSubJobs
         for (size_t i = 0; i < threadCount; ++i)
@@ -209,12 +192,7 @@ void JobManager::ExecuteParallelNoCtx(JobContainer *job,
         size_t threadCount =
             remain > 0 ? jobCount / divideCount + 1 : jobCount / divideCount;
 
-        //if SubJobs Count less than len than Create SubJobs
-        ThreadUtils::LockSpinLock(&m_SpinLock);
-
         job->prepareActiveJobs(threadCount); //TODO 개선필요
-
-        ThreadUtils::UnlockSpinLock(&m_SpinLock);
 
         //Add Active Jobs
         for (size_t i = 0; i < threadCount; ++i)
