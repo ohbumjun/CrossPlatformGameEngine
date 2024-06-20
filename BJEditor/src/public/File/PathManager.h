@@ -2,7 +2,6 @@
 
 #include "hzpch.h"
 
-
 namespace HazelEditor
 {
 enum class AssetPathEnum
