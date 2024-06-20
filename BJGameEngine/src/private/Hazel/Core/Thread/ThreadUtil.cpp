@@ -314,8 +314,7 @@ void ThreadUtils::LockSpinLock(SpinLock *spinlock)
     // TryLockSpinLock 값이 false 를 리턴할 때까지 무한 반복
     // 즉, spin_lock 값이 '1' 일때까지 무한 반복
     //     다른 쓰레드에서 해당 값을 '1' 로 설정할 때까지 무한 대기
-    while (TryLockSpinLock(spinlock))
-        ;
+    while (TryLockSpinLock(spinlock)); 
 }
 
 void ThreadUtils::UnlockSpinLock(SpinLock *spinlock)
