@@ -1,11 +1,20 @@
 ﻿#include "File/FileManager.h"
+#include "Hazel/FileSystem/DirectorySystem.h"
 #include "hzpch.h"
-
 
 namespace HazelEditor
 {
-void FileManager::Initialize()
+
+std::string FileManager::_projectPath = "";
+
+void FileManager::Initialize(const char *projectPath)
 {
+    _projectPath = projectPath;
+
     PathManager::initialize();
+}
+std::string FileManager::ToAbsolutePath(const char *relativePath)
+{
+    return Hazel::DirectorySystem::CombinePath(_projectPath.c_str(), relativePath);
 }
 } // namespace HazelEditor

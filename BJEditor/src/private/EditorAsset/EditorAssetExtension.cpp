@@ -1,44 +1,49 @@
-#include "AssetExtension.h"
-#include "SpriteAsset.h"
-#include "Sprite.h"
+#include "hzpch.h"
+#include "EditorAsset/EditorAssetExtension.h"
+#include "EditorAsset/TextureEditorAsset.h"
 #include <filesystem>
 
-std::unordered_map<std::string, AssetType> AssetExtension::_extensionMap;
-
-AssetType AssetExtension::GetAssetTypeByExtension(const std::string& assetPath)
+namespace HazelEditor
 {
-	std::filesystem::path path(assetPath);
 
-	// Get the extension using the path object's member function
-	const std::string& pathExt = path.extension().string();
+std::unordered_map<std::string, Hazel::ResourceType>
+    EditorAssetExtension::_extensionMap;
 
-	if (_extensionMap.find(pathExt) != _extensionMap.end())
-	{
-		return _extensionMap[pathExt];
-	}
+Hazel::ResourceType EditorAssetExtension::GetResourceTypeByExt(
+    const std::string &assetPath)
+{
+    std::filesystem::path path(assetPath);
 
-	return AssetType::UNKNOWN;
+    // Get the extension using the path object's member function
+    const std::string &pathExt = path.extension().string();
+
+    if (_extensionMap.find(pathExt) != _extensionMap.end())
+    {
+        return _extensionMap[pathExt];
+    }
+
+    return Hazel::ResourceType::UNKNOWN;
 }
 
-void AssetExtension::initialize()
+void EditorAssetExtension::initialize()
 {
-	// size_t spritePrototype = typeid(Sprite).hash_code();
-	// AssetAttribute* imageAssetAttribute = new AssetAttribute (AssetType::IMAGE, spritePrototype, spritePrototype,
-	// 	".png");
-	// _attributies[spritePrototype] = imageAssetAttribute;
+    // size_t spritePrototype = typeid(Sprite).hash_code();
+    // AssetAttribute* imageAssetAttribute = new AssetAttribute (AssetType::IMAGE, spritePrototype, spritePrototype,
+    // 	".png");
+    // _attributies[spritePrototype] = imageAssetAttribute;
 
-	_extensionMap[".png"] = AssetType::IMAGE;
+    _extensionMap[".png"] = Hazel::ResourceType::IMAGE;
 
-	/* (추천 코드)
+    /* (추천 코드)
 	// Load the asset extension
-	if (!assetExtension.LoadFromFile("Data/Extensions/AssetExtension.xml"))
+	if (!EditorAssetExtension.LoadFromFile("Data/Extensions/EditorAssetExtension.xml"))
 	{
 		cout << "Failed to load the asset extension" << endl;
 		return;
 	}
 
 	// Get the root node
-	TiXmlNode* root = assetExtension.FirstChild("AssetExtension");
+	TiXmlNode* root = EditorAssetExtension.FirstChild("EditorAssetExtension");
 	if (!root)
 	{
 		cout << "Failed to get the root node" << endl;
@@ -73,6 +78,7 @@ void AssetExtension::initialize()
 	*/
 }
 
-void AssetExtension::finalize()
+void EditorAssetExtension::finalize()
 {
 }
+} // namespace HazelEditor

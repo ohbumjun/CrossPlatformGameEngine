@@ -1,183 +1,189 @@
-#include "AssetManager.h"
-#include "AssetExtension.h"
-#include "SpriteAssetProcessor.h"
-#include "ImageAssetProcessor.h"
+#include "hzpch.h"
+#include "EditorAsset/EditorAssetManager.h"
+#include "EditorAsset/EditorAssetExtension.h"
+#include "EditorAsset/TextureEditorAssetProcessor.h"
 #include "EditorContext.h"
-#include "FileSystem.h"
-#include "FileManager.h"
+#include "Hazel/FileSystem/DirectorySystem.h"
+#include "File/FileManager.h"
 
-std::unordered_map<AssetType, AssetProcessor*> AssetManager::_loaders;
-std::unordered_map<std::string/*Resources/~~ 라는 상대경로 ?*/, Asset*> AssetManager::_assets;
 
-void AssetManager::initializeProcessors()
+namespace HazelEditor
 {
-	_loaders[AssetType::SPRITE] = new SpriteAssetProcessor();
-	_loaders[AssetType::IMAGE]	= new ImageAssetProcessor();
+
+std::unordered_map<Hazel::ResourceType, EditorAssetProcessor *>
+    EditorAssetManager::_loaders;
+std::unordered_map<std::string /*Resources/~~ 라는 상대경로 ?*/, EditorAsset *>
+    EditorAssetManager::_EditorAssets;
+
+void EditorAssetManager::initializeProcessors()
+{
+    _loaders[Hazel::ResourceType::IMAGE] = new TextureEditorAssetProcessor();
 }
 
-void AssetManager::PrepareAssets()
+void EditorAssetManager::PrepareEditorAssets()
 {
-	// 미리 필요한 파일들을 일단 로드한다.
+    // 미리 필요한 파일들을 일단 로드한다.
 
-	// 그리고 Cache 파일로 저장한다.
+    // 그리고 Cache 파일로 저장한다.
 
-	LoadAsset("Assets/Ship.png");
-	LoadAsset("Assets/Asteroid.png");
-	LoadAsset("Assets/Laser.png");
+    LoadEditorAsset("EditorAssets/Ship.png");
+    LoadEditorAsset("EditorAssets/Asteroid.png");
+    LoadEditorAsset("EditorAssets/Laser.png");
 }
 
-void AssetManager::Initialize()
+void EditorAssetManager::Initialize()
 {
-	AssetExtension::initialize();
+    EditorAssetExtension::initialize();
 
-	initializeProcessors();
-
-	TextureAssetManager::initialize();
+    initializeProcessors();
 }
 
-void AssetManager::Finalize()
+void EditorAssetManager::Finalize()
 {
-	AssetExtension::finalize();
+    EditorAssetExtension::finalize();
 
-	TextureAssetManager::finalize();
+    // 각 type 별로 EditorAsset Record 객체도 해제해준다.
 
-	// 각 type 별로 Asset Record 객체도 해제해준다.
+    for (const auto &EditorAssetInfo : _EditorAssets)
+    {
+        EditorAsset *editorAsset = EditorAssetInfo.second;
+        Hazel::ResourceType resourceType = editorAsset->GetResourceType();
+        EditorAssetProcessor *editorAssetProcessor = _loaders[resourceType];
+        editorAssetProcessor->DestroyEditorAsset(editorAsset);
+    }
 
-	for (const auto& assetInfo : _assets)
-	{
-		Asset* asset = assetInfo.second;
-		AssetType assetType = asset->GetAssetType();
-		AssetProcessor* assetProcessor = _loaders[assetType];
-		assetProcessor->DestroyAsset(asset);
-	}
-
-	_assets.clear();
+    _EditorAssets.clear();
 }
 
-void AssetManager::CreateAsset()
+void EditorAssetManager::CreateEditorAsset()
 {
 }
 
-// SDL_Texture* AssetManager::LoadTexture(const std::string& relativePath)
+// SDL_Texture* EditorAssetManager::LoadTexture(const std::string& relativePath)
 // {
-// 	return TextureAssetManager::loadTexture(relativePath);
+// 	return TextureEditorAssetManager::loadTexture(relativePath);
 // }
-// 
-// SDL_Texture* AssetManager::GetTexture(const std::string& fileName)
+//
+// SDL_Texture* EditorAssetManager::GetTexture(const std::string& fileName)
 // {
-// 	return TextureAssetManager::getTexture(fileName);
+// 	return TextureEditorAssetManager::getTexture(fileName);
 // }
 
-Asset* AssetManager::GetAssetByPath(const std::string& assetPath)
+EditorAsset *EditorAssetManager::GetEditorAssetByPath(const std::string &EditorAssetPath)
 {
-	if (_assets.find(assetPath) == _assets.end())
-	{
-		return nullptr;
-	}
+    if (_EditorAssets.find(EditorAssetPath) == _EditorAssets.end())
+    {
+        return nullptr;
+    }
 
-	return _assets[assetPath];
+    return _EditorAssets[EditorAssetPath];
 }
 
-void AssetManager::DeleteAsset(Asset* asset)
+void EditorAssetManager::DeleteEditorAsset(EditorAsset *EditorAsset)
 {
-	AssetType assetType = asset->GetAssetType();
-	AssetProcessor* assetProcessor = _loaders[assetType];
-	assetProcessor->DestroyAsset(asset);
+    Hazel::ResourceType EditorAssetType = EditorAsset->GetResourceType();
+    EditorAssetProcessor *EditorAssetProcessor = _loaders[EditorAssetType];
+    EditorAssetProcessor->DestroyEditorAsset(EditorAsset);
 
-	// 이 부분에 동기화를 진행해줘야 한다.
-	_assets.erase(asset->GetResourcePath());
+    // 이 부분에 동기화를 진행해줘야 한다.
+    _EditorAssets.erase(EditorAsset->GetResourcePath());
 }
 
-Asset* AssetManager::CreateAsset(AssetType type, const std::string& path)
+EditorAsset *EditorAssetManager::CreateEditorAsset(Hazel::ResourceType type,
+                                                   const std::string &path)
 {
-	return nullptr;
+    return nullptr;
 }
 
-std::string AssetManager::GetAbsoluteResourcePath(const std::string& relativeResourcePath)
+std::string EditorAssetManager::GetAbsoluteResourcePath(
+    const std::string &relativeResourcePath)
 {
-	// LV_CHECK(!LvString::IsNullOrEmpty(relativeResourcePath), "relativeResourcePath is null or empty");
+    // LV_CHECK(!LvString::IsNullOrEmpty(relativeResourcePath), "relativeResourcePath is null or empty");
 
-	// if (relativeResourcePath.StartsWith(LvEditorContext::Directories::builtinresource))
-	// {
-	// 	return LvFileManager::ToAbsolutePath(relativeResourcePath.c_str());
-	// }
+    // if (relativeResourcePath.StartsWith(LvEditorContext::Directories::builtinresource))
+    // {
+    // 	return LvFileManager::ToAbsolutePath(relativeResourcePath.c_str());
+    // }
 
-	return FileManager::ToAbsolutePath(FileSystem::CombinePath(EditorContext::Directories::resources, relativeResourcePath.c_str()).c_str());
-
+    return FileManager::ToAbsolutePath(
+        Hazel::DirectorySystem::CombinePath(EditorContext::Directories::resources,
+                                relativeResourcePath.c_str())
+            .c_str());
 }
 
-void AssetManager::LoadAsset(const std::string& relativePath)
+void EditorAssetManager::LoadEditorAsset(const std::string &relativePath)
 {
-	// extension 을 통해 asset type 추출
-	AssetType assetType = AssetExtension::GetAssetTypeByExtension(relativePath);
+    // extension 을 통해 EditorAsset type 추출
+    Hazel::ResourceType resourceType =
+        EditorAssetExtension::GetResourceTypeByExt(relativePath);
 
-	// "relativePath" 로 asset 가져오기
+    // "relativePath" 로 EditorAsset 가져오기
 
 
-	// 해당 asset type 으로 asset record 객체 가져오기
-	AssetProcessor* assetProcessor = _loaders[assetType];
+    // 해당 EditorAsset type 으로 EditorAsset record 객체 가져오기
+    EditorAssetProcessor *EditorAssetProcessor = _loaders[resourceType];
 
-	// 없으면 이제 Load
-	// 이때 guid 랑 uuid 도 발급해주기
-	// 해당 정보로 CreateAsset 호출
-	// Asset Record 가져와서, AssetRecord 의 CreateAsset 함수 호출
-	// (여기서부터는 나의 의지..?) 그리고 실제 prototype load 도 수행하기.
-	Asset* asset = nullptr;
+    // 없으면 이제 Load
+    // 이때 guid 랑 uuid 도 발급해주기
+    // 해당 정보로 CreateEditorAsset 호출
+    // EditorAsset Record 가져와서, EditorAssetRecord 의 CreateEditorAsset 함수 호출
+    // (여기서부터는 나의 의지..?) 그리고 실제 prototype load 도 수행하기.
+    EditorAsset *EditorAsset = nullptr;
 
-	if (_assets.find(relativePath) != _assets.end())
-	{
-		asset = _assets[relativePath];
-	}
+    if (_EditorAssets.find(relativePath) != _EditorAssets.end())
+    {
+        EditorAsset = _EditorAssets[relativePath];
+    }
 
-	// 원래대로라면 Asset Info 도 따로 만들고, 최초로 만들어준 file id 및 guid 도
-	// 해당 info 파일에 넣어줘야 한다.
-	// 하지만 현재는 일단 빠르게 개발하기 위해 해당 단계는 건너뛴다.
+    // 원래대로라면 EditorAsset Info 도 따로 만들고, 최초로 만들어준 file id 및 guid 도
+    // 해당 info 파일에 넣어줘야 한다.
+    // 하지만 현재는 일단 빠르게 개발하기 위해 해당 단계는 건너뛴다.
 
-	if (asset == nullptr)
-	{
-		FileId fileId(relativePath);
+    if (EditorAsset == nullptr)
+    {
+        FileId fileId(relativePath);
 
-		// 기존 info 지우고
-		// info 다시쓰고 ?
+        // 기존 info 지우고
+        // info 다시쓰고 ?
 
-		asset = assetProcessor->CreateAsset(fileId, relativePath);
-		asset->onCreate();
-	}
+        EditorAsset = EditorAssetProcessor->CreateEditorAsset(fileId, relativePath);
+        EditorAsset->onCreate();
+    }
 
-	const std::string resAbsPath = GetAbsoluteResourcePath(relativePath);
-	assetProcessor->onLoad(asset, resAbsPath);
+    const std::string resAbsPath = GetAbsoluteResourcePath(relativePath);
+    EditorAssetProcessor->onLoad(EditorAsset, resAbsPath);
 
-	_assets[relativePath] = asset;
+    _EditorAssets[relativePath] = EditorAsset;
 
-	/*
-	LvHashtable<uint64, LvAssetReference> assetDependencies;
+    /*
+	LvHashtable<uint64, LvEditorAssetReference> EditorAssetDependencies;
 	LvMemoryStream<> contentStream;
 	{
 		LvOutputStream contentOutputStream(&contentStream);
 		Engine::LvBinaryTypedArchive contentArchive(contentOutputStream);
-		const bool isSucceed = onImport(asset, resAbsolutePath, contentArchive, assetDependencies);
+		const bool isSucceed = onImport(EditorAsset, resAbsolutePath, contentArchive, EditorAssetDependencies);
 		contentArchive.Flush();
 		if (isSucceed == false) return;
 	}
 
-	updateHeader(asset, resAbsolutePath);
+	updateHeader(EditorAsset, resAbsolutePath);
 
-	for (const auto& each : assetDependencies)
+	for (const auto& each : EditorAssetDependencies)
 	{
-		Editor::LvAsset::Header::Dependency def;
+		Editor::LvEditorAsset::Header::Dependency def;
 		def.id = each.value.id;
 		def.name = each.value.GetName();
 		def.type = each.value.GetDependenceType();
 		def.refCount = each.value.Count();
 		def.uuid = each.value.GetUuid().ToString();
 
-		asset.header.dependencies.Add(def.id, std::move(def));
+		EditorAsset.header.dependencies.Add(def.id, std::move(def));
 	}
 
 	LvMemoryStream<> stream;
 	LvOutputStream os(&stream);
 
-	asset.header.Write(os, contentStream.Length());
+	EditorAsset.header.Write(os, contentStream.Length());
 
 	contentStream.SetPosition(0);
 	os.stream->WriteRaw(contentStream.GetMemory(), contentStream.Length());
@@ -189,6 +195,8 @@ void AssetManager::LoadAsset(const std::string& relativePath)
 	*/
 }
 
-void AssetManager::ImportAsset(const std::string& relativePath)
+void EditorAssetManager::ImportEditorAsset(const std::string &relativePath)
 {
 }
+
+} // namespace HazelEditor

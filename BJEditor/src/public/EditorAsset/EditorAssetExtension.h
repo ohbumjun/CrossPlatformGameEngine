@@ -1,14 +1,16 @@
 #pragma once
 
-#include "Common.h"
-#include "Asset.h"
-#include "AssetAttribute.h"
+#include "hzpch.h"
+#include "EditorAsset.h"
+#include "EditorAssetAttribute.h"
 
-class AssetExtension
+namespace HazelEditor
 {
-	friend class AssetManager;
+	class EditorAssetExtension
+{
+        friend class EditorAssetManager;
 
-	static AssetType GetAssetTypeByExtension(const std::string& extension);
+	static Hazel::ResourceType  GetResourceTypeByExt(const std::string& extension);
 
 private :
 	static void initialize();
@@ -17,6 +19,7 @@ private :
 
 	// static std::vector<AssetAttribute*> _attributies;
 	// static std::unordered_map<size_t, AssetAttribute*> _attributies;
-	static std::unordered_map<std::string, AssetType> _extensionMap;
+    static std::unordered_map<std::string, Hazel::ResourceType> _extensionMap;
 };
 
+	}

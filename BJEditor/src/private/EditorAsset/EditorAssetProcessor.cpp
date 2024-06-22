@@ -1,15 +1,24 @@
-#include "AssetProcessor.h"
+#include "hzpch.h"
+#include "EditorAsset/EditorAssetProcessor.h"
 
-bool AssetProcessor::CanRecord(const std::string& resourcePath)
+namespace HazelEditor
+{
+bool EditorAssetProcessor::CanRecord(const std::string &resourcePath)
 {
     return false;
 }
 
-void AssetProcessor::ImportResource(Asset& asset, const std::string& resAbsolutePath)
+void EditorAssetProcessor::ImportResource(EditorAsset &EditorAsset,
+                                    const std::string &resAbsolutePath)
 {
 }
 
-Asset* AssetProcessor::CreateAsset(const FileId& fileId, const std::string& relativResourcePath, bool isBuiltIn)
+EditorAsset *EditorAssetProcessor::CreateEditorAsset(const FileId &fileId,
+                                   const std::string &relativResourcePath,
+                                   bool isBuiltIn)
 {
     return nullptr;
 }
+
+}
+

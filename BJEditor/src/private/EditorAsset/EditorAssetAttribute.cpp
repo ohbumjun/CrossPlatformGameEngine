@@ -1,1 +1,1 @@
-#include "AssetAttribute.h"
+#include "EditorAsset/EditorAssetAttribute.h"

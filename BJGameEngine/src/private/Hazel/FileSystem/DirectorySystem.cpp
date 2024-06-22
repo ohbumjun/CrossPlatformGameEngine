@@ -7,6 +7,10 @@ char a_executablePath[2048] = {
 };
 std::string s_executableDirectoryPath;
 
+namespace Hazel
+{
+
+
 const char *DirectorySystem::PrintError(int error_code)
 {
     switch (error_code)
@@ -415,6 +419,68 @@ std::string DirectorySystem::CombinePath(const char *a, const char *b)
     return s;
 }
 
+// 순소 폴더 경로 리턴
+std::string DirectorySystem::GetPathDirectory(const char* path)
+{
+    return std::string();
+}
+
+// 확장자 리턴
+std::string DirectorySystem::GetExtenstion(const char* path)
+{
+    std::string filename(path);
+
+    // Find the position of the last dot (.)
+    size_t pos = filename.rfind('.');
+
+    // If no dot is found, return an empty string
+    if (pos == std::string::npos)
+    {
+        return "";
+    }
+
+    // Extract the extension (everything after the last dot)
+    return filename.substr(pos + 1);
+}
+
+std::string GetPathame(const char* path)
+{
+    std::string result;
+    if (nullptr == path)
+    {
+        throw("path is nullptr.");
+        return result;
+    }
+
+    size_t len = strlen(path);
+
+    if (len == 0)
+    {
+        return path;
+    }
+
+    const char *p = &path[len - 1];
+    const char *s = path;
+
+    while (p != s)
+    {
+        if (*p == '\\' || *p == '/')
+        {
+            result.append(p + 1, 0, static_cast<int>(len - (p + 1 - s)));
+            return result;
+        }
+
+        if (*p == ':')
+        {
+            return result;
+        }
+        p--;
+    }
+
+    result.append(path);
+    return result;
+}
+
 std::string DirectorySystem::ToWinSystemPath(const std::string &str)
 {
     std::string returnStr = str;
@@ -545,3 +611,4 @@ void DirectorySystem::FromUTF8ToSystemPath(void *dest_sys,
         }
     }
 }
+} // namespace Hazel

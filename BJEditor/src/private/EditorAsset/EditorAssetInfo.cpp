@@ -1,1 +1,2 @@
-#include "AssetInfo.h"
+#include "hzpch.h"
+#include "EditorAsset/EditorAssetInfo.h"
