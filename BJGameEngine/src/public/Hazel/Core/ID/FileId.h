@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Common.h"
+#include "hzpch.h"
 
 // File IDs: Internal identifier for faster lookups within a project (like call numbers).
 // File경로마다 고유한 Guid 가 만들어진다.

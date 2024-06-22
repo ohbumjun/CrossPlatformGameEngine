@@ -3,11 +3,10 @@
 #include "EditorAsset.h"
 #include "hzpch.h"
 
-class EditorAssetProcessor;
-struct SDL_Texture;
-
 namespace HazelEditor
 {
+class EditorAssetProcessor;
+
 class EditorAssetManager
 {
     friend class Game;
@@ -38,10 +37,9 @@ private:
     static void initializeProcessors();
 
     static std::unordered_map<Hazel::ResourceType, EditorAssetProcessor *>
-        _loaders;
-    static std::unordered_map<std::string /*Resources/~~ 라는 상대경로 ?*/,
-                              EditorAsset *>
-        _EditorAssets;
+        m_Loaders;
+    static std::unordered_map<std::string /*Resources/~~ 라는 상대경로 ?*/, EditorAsset *>
+        m_EditorAssets;
 };
 
 } // namespace HazelEditor

@@ -6,18 +6,15 @@
 #include "Hazel/FileSystem/DirectorySystem.h"
 #include "File/FileManager.h"
 
-
 namespace HazelEditor
 {
 
-std::unordered_map<Hazel::ResourceType, EditorAssetProcessor *>
-    EditorAssetManager::_loaders;
-std::unordered_map<std::string /*Resources/~~ 라는 상대경로 ?*/, EditorAsset *>
-    EditorAssetManager::_EditorAssets;
+    std::unordered_map<Hazel::ResourceType, EditorAssetProcessor *>EditorAssetManager::m_Loaders;
+    std::unordered_map<std::string, EditorAsset *>EditorAssetManager::m_EditorAssets;
 
 void EditorAssetManager::initializeProcessors()
 {
-    _loaders[Hazel::ResourceType::IMAGE] = new TextureEditorAssetProcessor();
+    m_Loaders[Hazel::ResourceType::IMAGE] = new TextureEditorAssetProcessor();
 }
 
 void EditorAssetManager::PrepareEditorAssets()
@@ -44,15 +41,15 @@ void EditorAssetManager::Finalize()
 
     // 각 type 별로 EditorAsset Record 객체도 해제해준다.
 
-    for (const auto &EditorAssetInfo : _EditorAssets)
+    for (const auto &EditorAssetInfo : m_EditorAssets)
     {
         EditorAsset *editorAsset = EditorAssetInfo.second;
         Hazel::ResourceType resourceType = editorAsset->GetResourceType();
-        EditorAssetProcessor *editorAssetProcessor = _loaders[resourceType];
+        EditorAssetProcessor *editorAssetProcessor = m_Loaders[resourceType];
         editorAssetProcessor->DestroyEditorAsset(editorAsset);
     }
 
-    _EditorAssets.clear();
+    m_EditorAssets.clear();
 }
 
 void EditorAssetManager::CreateEditorAsset()
@@ -71,22 +68,22 @@ void EditorAssetManager::CreateEditorAsset()
 
 EditorAsset *EditorAssetManager::GetEditorAssetByPath(const std::string &EditorAssetPath)
 {
-    if (_EditorAssets.find(EditorAssetPath) == _EditorAssets.end())
+    if (m_EditorAssets.find(EditorAssetPath) == m_EditorAssets.end())
     {
         return nullptr;
     }
 
-    return _EditorAssets[EditorAssetPath];
+    return m_EditorAssets[EditorAssetPath];
 }
 
 void EditorAssetManager::DeleteEditorAsset(EditorAsset *EditorAsset)
 {
     Hazel::ResourceType EditorAssetType = EditorAsset->GetResourceType();
-    EditorAssetProcessor *EditorAssetProcessor = _loaders[EditorAssetType];
+    EditorAssetProcessor *EditorAssetProcessor = m_Loaders[EditorAssetType];
     EditorAssetProcessor->DestroyEditorAsset(EditorAsset);
 
     // 이 부분에 동기화를 진행해줘야 한다.
-    _EditorAssets.erase(EditorAsset->GetResourcePath());
+    m_EditorAssets.erase(EditorAsset->GetResourcePath());
 }
 
 EditorAsset *EditorAssetManager::CreateEditorAsset(Hazel::ResourceType type,
@@ -121,7 +118,7 @@ void EditorAssetManager::LoadEditorAsset(const std::string &relativePath)
 
 
     // 해당 EditorAsset type 으로 EditorAsset record 객체 가져오기
-    EditorAssetProcessor *EditorAssetProcessor = _loaders[resourceType];
+    EditorAssetProcessor *EditorAssetProcessor = m_Loaders[resourceType];
 
     // 없으면 이제 Load
     // 이때 guid 랑 uuid 도 발급해주기
@@ -130,9 +127,9 @@ void EditorAssetManager::LoadEditorAsset(const std::string &relativePath)
     // (여기서부터는 나의 의지..?) 그리고 실제 prototype load 도 수행하기.
     EditorAsset *EditorAsset = nullptr;
 
-    if (_EditorAssets.find(relativePath) != _EditorAssets.end())
+    if (m_EditorAssets.find(relativePath) != m_EditorAssets.end())
     {
-        EditorAsset = _EditorAssets[relativePath];
+        EditorAsset = m_EditorAssets[relativePath];
     }
 
     // 원래대로라면 EditorAsset Info 도 따로 만들고, 최초로 만들어준 file id 및 guid 도
@@ -153,7 +150,7 @@ void EditorAssetManager::LoadEditorAsset(const std::string &relativePath)
     const std::string resAbsPath = GetAbsoluteResourcePath(relativePath);
     EditorAssetProcessor->onLoad(EditorAsset, resAbsPath);
 
-    _EditorAssets[relativePath] = EditorAsset;
+    m_EditorAssets[relativePath] = EditorAsset;
 
     /*
 	LvHashtable<uint64, LvEditorAssetReference> EditorAssetDependencies;

@@ -1,14 +1,14 @@
-﻿#include "Hazel/FileSystem/DirectorySystem.h"
+﻿#include "hzpch.h"
+#include "Hazel/FileSystem/DirectorySystem.h"
 #include "Hazel/Utils/StringUtil.h"
-#include "hzpch.h"
+
+namespace Hazel
+{
 
 char a_executablePath[2048] = {
     0,
 };
 std::string s_executableDirectoryPath;
-
-namespace Hazel
-{
 
 
 const char *DirectorySystem::PrintError(int error_code)
@@ -443,7 +443,7 @@ std::string DirectorySystem::GetExtenstion(const char* path)
     return filename.substr(pos + 1);
 }
 
-std::string GetPathame(const char* path)
+std::string DirectorySystem::GetPathame(const char *path)
 {
     std::string result;
     if (nullptr == path)

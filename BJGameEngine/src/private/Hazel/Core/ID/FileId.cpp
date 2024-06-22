@@ -1,5 +1,5 @@
-#include "FileId.h"
-#include "SpookyHash.h"
+#include "Hazel/Core/ID/FileId.h"
+#include "Hazel/Utils/SpookyHash.h"
 
 std::unordered_map<uint32, FileId> IdentifierManager::_fileIdMap;
 

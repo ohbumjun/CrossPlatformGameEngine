@@ -4,6 +4,8 @@
 
 namespace HazelEditor
 {
+class EditorAsset;
+
 class TextureEditorAssetProcessor : public EditorAssetProcessor
 {
 public:

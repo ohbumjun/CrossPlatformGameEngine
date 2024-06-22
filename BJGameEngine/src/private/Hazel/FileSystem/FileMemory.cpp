@@ -2,7 +2,7 @@
 #include "Hazel/FileSystem/DirectorySystem.h"
 #include "hzpch.h"
 
-namespace HazelEditor
+namespace Hazel
 {
 
 FileMemory::FileMemory(HANDLE file) : m_FileHandle(file)

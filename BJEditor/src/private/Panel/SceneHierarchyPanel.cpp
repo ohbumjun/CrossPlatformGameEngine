@@ -6,7 +6,7 @@
 #include "Panel/Utils/PanelUtils.h"
 
 // Utils
-#include "Hazel/Asset/Image/ImageUtils.h"
+#include "Hazel/Resource/Image/ImageUtils.h"
 
 // Component
 #include "Hazel/Scene/Component/CameraComponent.h"
