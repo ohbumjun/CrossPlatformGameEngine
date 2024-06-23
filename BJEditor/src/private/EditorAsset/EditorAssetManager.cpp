@@ -2,6 +2,7 @@
 #include "EditorAsset/EditorAssetManager.h"
 #include "EditorAsset/EditorAssetExtension.h"
 #include "EditorAsset/TextureEditorAssetProcessor.h"
+#include "EditorAsset/ShaderEditorAssetProcessor.h"
 #include "EditorContext.h"
 #include "Hazel/FileSystem/DirectorySystem.h"
 #include "File/FileManager.h"
@@ -14,7 +15,8 @@ namespace HazelEditor
 
 void EditorAssetManager::initializeProcessors()
 {
-    m_Loaders[Hazel::ResourceType::IMAGE] = new TextureEditorAssetProcessor();
+    m_Loaders[Hazel::ResourceType::IMAGE]    = new TextureEditorAssetProcessor();
+    m_Loaders[Hazel::ResourceType::SHADER] = new ShaderEditorAssetProcessor();
 }
 
 void EditorAssetManager::PrepareEditorAssets()

@@ -4,7 +4,7 @@
 
 namespace HazelEditor
 {
-class SpriteAsset : public EditorAsset
+class ShaderEditorAsset : public EditorAsset
 {
 };
 
