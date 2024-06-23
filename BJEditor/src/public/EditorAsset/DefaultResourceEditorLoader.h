@@ -1,22 +1,12 @@
 #pragma once
 
-#include "EditorAssetProcessor.h"
+#include "Hazel/Resource/DefaultResourceManager.h"
 
 namespace HazelEditor
 {
-class EditorAsset;
-
-class TextureEditorAssetProcessor : public EditorAssetProcessor
+class DefaultResourceEditorLoader : public Hazel::DefaultResourceLoader
 {
-public:
-    EditorAsset *TextureEditorAssetProcessor::CreateEditorAsset(
-        const FileId &uuid,
-        const std::string &resourcePath,
-        bool isBuiltIn);
-
-	virtual void WriteResourceFile(EditorAsset &EditorAsset){};
-
-    virtual void WriteCacheFile(EditorAsset &EditorAsset) {}
+    
 };
 
 } // namespace HazelEditor

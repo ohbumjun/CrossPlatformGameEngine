@@ -1,6 +1,7 @@
 #pragma once
 
 #include "EditorAsset.h"
+#include "Hazel/Resource/AssetManagerBase.h
 #include "hzpch.h"
 
 namespace HazelEditor
