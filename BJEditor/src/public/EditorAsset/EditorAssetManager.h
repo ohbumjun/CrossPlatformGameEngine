@@ -1,14 +1,20 @@
 #pragma once
 
 #include "EditorAsset.h"
-#include "Hazel/Resource/AssetManagerBase.h
+#include "Hazel/Resource/AssetManagerBase.h"
 #include "hzpch.h"
 
 namespace HazelEditor
 {
 class EditorAssetProcessor;
 
-class EditorAssetManager
+class EditorAssetManagerController : public Hazel::AssetManagerController
+{
+    virtual void loadAsset(const std::string &relativePath);
+   
+};
+
+class EditorAssetManager 
 {
     friend class Game;
 

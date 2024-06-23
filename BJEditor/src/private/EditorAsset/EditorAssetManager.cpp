@@ -198,4 +198,9 @@ void EditorAssetManager::ImportEditorAsset(const std::string &relativePath)
 {
 }
 
+void EditorAssetManagerController::loadAsset(const std::string &relativePath)
+{
+    EditorAssetManager::LoadEditorAsset(relativePath);
+}
+
 } // namespace HazelEditor
