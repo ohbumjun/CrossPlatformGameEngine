@@ -25,7 +25,7 @@ Hazel::ResourceType EditorAssetExtension::GetResourceTypeByExt(
     return Hazel::ResourceType::UNKNOWN;
 }
 
-void EditorAssetExtension::initialize()
+void EditorAssetExtension::Initialize()
 {
     // size_t spritePrototype = typeid(Sprite).hash_code();
     // AssetAttribute* imageAssetAttribute = new AssetAttribute (AssetType::IMAGE, spritePrototype, spritePrototype,
@@ -79,7 +79,7 @@ void EditorAssetExtension::initialize()
 	*/
 }
 
-void EditorAssetExtension::finalize()
+void EditorAssetExtension::Finalize()
 {
 }
 } // namespace HazelEditor

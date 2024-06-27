@@ -8,13 +8,14 @@ namespace HazelEditor
 {
 	class EditorAssetExtension
 {
-        friend class EditorAssetManager;
+     friend class EditorAssetManager;
 
+	 public:
 	static Hazel::ResourceType  GetResourceTypeByExt(const std::string& extension);
 
+	static void Initialize();
+	static void Finalize();
 private :
-	static void initialize();
-	static void finalize();
 	static void addExtension();
 
 	// static std::vector<AssetAttribute*> _attributies;
