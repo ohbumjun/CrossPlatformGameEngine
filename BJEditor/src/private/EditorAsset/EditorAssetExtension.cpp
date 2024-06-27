@@ -33,6 +33,7 @@ void EditorAssetExtension::initialize()
     // _attributies[spritePrototype] = imageAssetAttribute;
 
     _extensionMap[".png"] = Hazel::ResourceType::IMAGE;
+    _extensionMap[".glsl"] = Hazel::ResourceType::SHADER;
 
     /* (추천 코드)
 	// Load the asset extension
