@@ -38,6 +38,9 @@ void BaseWindow::Update(float deltaTime)
 inline void BaseWindow::onInit()
 {
 }
+inline void BaseWindow::onUpdate(float deltatime)
+{
+}
 inline void BaseWindow::onOpen()
 {
 }

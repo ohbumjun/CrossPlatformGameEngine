@@ -27,6 +27,8 @@ namespace HazelEditor
     protected:
         inline virtual void onInit();
 
+        inline virtual void onUpdate(float deltatime);
+
         inline virtual void onOpen();
 
         inline virtual void onClose();
