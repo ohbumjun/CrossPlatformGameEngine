@@ -32,14 +32,14 @@ void EditorAssetManager::PrepareEditorAssets()
 
 void EditorAssetManager::Initialize()
 {
-    EditorAssetExtension::initialize();
+    EditorAssetExtension::Initialize();
 
     initializeProcessors();
 }
 
 void EditorAssetManager::Finalize()
 {
-    EditorAssetExtension::finalize();
+    EditorAssetExtension::Finalize();
 
     // 각 type 별로 EditorAsset Record 객체도 해제해준다.
 
@@ -104,10 +104,12 @@ std::string EditorAssetManager::GetAbsoluteResourcePath(
     // 	return LvFileManager::ToAbsolutePath(relativeResourcePath.c_str());
     // }
 
-    return FileManager::ToAbsolutePath(
-        Hazel::DirectorySystem::CombinePath(EditorContext::Directories::resources,
-                                relativeResourcePath.c_str())
-            .c_str());
+    // return FileManager::ToAbsolutePath(
+    //     Hazel::DirectorySystem::CombinePath(EditorContext::Directories::resources,
+    //                             relativeResourcePath.c_str())
+    //         .c_str());
+
+    return std::string();
 }
 
 void EditorAssetManager::LoadEditorAsset(const std::string &relativePath)
