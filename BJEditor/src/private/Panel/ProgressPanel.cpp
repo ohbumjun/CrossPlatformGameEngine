@@ -2,6 +2,7 @@
 
 // Panel
 #include "Panel/ProgressPanel.h"
+#include "imgui.h"
 
 namespace HazelEditor
 {
@@ -16,12 +17,12 @@ void ProgressPanel::Open(const char *title,
                            float progress)
 {
     _progress = progress;
-    LvMessagePanel::Open(title, message, false);
+    MessagePanel::Open(title, message, false);
 }
 
 void ProgressPanel::onMessageGUI()
 {
-    if (_message.IsEmpty())
+    if (_message.empty())
     {
         _isOpen = false;
     }
@@ -35,19 +36,19 @@ void ProgressPanel::onMessageGUI()
 
     const char *ellipsis = "...";
     static float ellipsisWidth = ImGui::CalcTextSize(ellipsis).x;
-    LvString message;
-    int64 index = _message.Length() - 1;
-    message.Insert(0, loading);
+    std::string message;
+    int64 index = _message.length() - 1;
+    message.insert(0, 1, loading);
     while (true)
     {
         if (index < 0)
             break;
-        message.Insert(0, _message[index]);
+        message.insert(0, 1, _message[index]);
 
         if (width - ellipsisWidth <= ImGui::CalcTextSize(message.c_str()).x)
         {
-            message = message.SubString(1, message.Length() - 1);
-            message.Insert(0, ellipsis);
+            message = message.substr(1, message.length() - 1);
+            message.insert(0,1, *ellipsis);
             break;
         }
         --index;
