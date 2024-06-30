@@ -23,10 +23,6 @@ void BaseWindow::Present()
 {
     onPresent();
 }
-void BaseWindow::Prepare()
-{
-    onPrepare();
-}
 void BaseWindow::PeekEvent()
 {
 }

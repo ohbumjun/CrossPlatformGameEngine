@@ -16,8 +16,7 @@ PanelController::~PanelController()
 {
 }
 // Panel *PanelController::CreatePanel(const Hazel::TypeId &type,
-Panel *PanelController::CreatePanel(const std::function<void*()> &constructor,
-                                    const Hazel::TypeId &type)
+Panel *PanelController::CreatePanel(const Hazel::TypeId &type)
 {
     // 현재는 메인 쓰레드여야만 한다.
     // LV_CHECK_MAIN_THREAD();
@@ -26,33 +25,27 @@ Panel *PanelController::CreatePanel(const std::function<void*()> &constructor,
 
     const char *name = nullptr;
 
-    // static const Hazel::TypeId scriptType = Hazel::Reflection::GetTypeID<LvScriptPanel>();
-    // const LvTypeId createType = monoScriptPanel ? scriptType : type;
-   // const Hazel::TypeId createType = type;
-   // 
-   // const Hazel::TypeInfo *info = Hazel::Reflection::GetTypeInfo(createType);
-   // if (info)
-   // {
-   //     if (info->constructors.eligible)
-   //     {
-   //         panel = static_cast<Panel *>(
-   //             info->constructors.eligible(Hazel::Reflection::Create(createType)));
-   //     }
-   //     else
-   //     {
-   //         // 해당 패널에 기본 생성자가 없으므로 추가하여야 합니다.
-   //         HZ_CORE_WARN("Not found default constructor.");
-   //     }
-   // }
-   // else
-   // {
-   //     // 리플렉션에 타입이 등록되어야 합니다.
-   //     HZ_CORE_WARN("The type must be registered with reflection.");
-   // }
-
-   void* voidPanel = constructor();
-
-    panel = static_cast<Panel*>(voidPanel);
+   const Hazel::TypeId createType = type;
+   
+   const Hazel::TypeInfo *info = Hazel::Reflection::GetTypeInfo(createType);
+   if (info)
+   {
+       if (info->constructors.eligible)
+       {
+           panel = static_cast<Panel *>(info->constructors.eligible(
+               Hazel::Reflection::CreateTarget(createType)));
+       }
+       else
+       {
+           // 해당 패널에 기본 생성자가 없으므로 추가하여야 합니다.
+           HZ_CORE_WARN("Not found default constructor.");
+       }
+   }
+   else
+   {
+       // 리플렉션에 타입이 등록되어야 합니다.
+       HZ_CORE_WARN("The type must be registered with reflection.");
+   }
 
   return panel ? addPanel(panel, type) : panel;
 }

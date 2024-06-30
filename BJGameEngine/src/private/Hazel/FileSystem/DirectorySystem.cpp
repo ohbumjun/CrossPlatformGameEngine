@@ -419,6 +419,90 @@ std::string DirectorySystem::CombinePath(const char *a, const char *b)
     return s;
 }
 
+bool DirectorySystem::CopyFilePath(const char *dst, const char *src)
+{// 	return lv_file_copy(lv_path_normalize(dst).c_str(), lv_path_normalize(src).c_str());
+    const char ds[2] = {DIRECTORY_SEPARATOR_CHAR, 0};
+
+    char cdst[CHAR_INIT_LENGTH] = {0};
+    char csrc[CHAR_INIT_LENGTH] = {0};
+
+    StringUtil::pr_str_replace_opt(cdst, dst, "/", ds);
+    StringUtil::pr_str_replace_opt(csrc, src, "/", ds);
+
+    wchar_t wcdst[CHAR_INIT_LENGTH] = {0};
+    wchar_t wcsrc[CHAR_INIT_LENGTH] = {0};
+
+    FromUTF8ToSystemPath(wcdst, cdst, true);
+    FromUTF8ToSystemPath(wcsrc, csrc, true);
+
+    FILE *in, *out;
+    char buf[4096];
+    size_t len;
+
+    if (strcmp((char *)csrc, (char *)cdst) == 0)
+        return false;
+
+    if ((in = _wfopen(wcsrc, L"rb")) == NULL)
+    {
+        const int error_code = GetLastError();
+        printf("lv_file_create Code = %i : %s\n",
+               error_code,
+               PrintError(error_code));
+        return false;
+    }
+
+    if ((out = _wfopen(wcdst, L"wb")) == NULL)
+    {
+        const int error_code = GetLastError();
+        printf("lv_file_create Code = %i : %s\n",
+               error_code,
+               PrintError(error_code));
+
+        fclose(in);
+        return false;
+    }
+
+    while ((len = fread(buf, sizeof(char), sizeof(buf), in)) != 0)
+    {
+        if (fwrite(buf, sizeof(char), len, out) == 0)
+        {
+            fclose(in);
+            fclose(out);
+            free(buf);
+            remove((char *)cdst);
+            //_unlink(cdst); // 에러난 파일 지우고 종료
+            return false;
+        }
+    }
+
+    SetFileAttributes(wcdst, GetFileAttributes(wcsrc));
+
+    fclose(in);
+    fclose(out);
+
+    return true;
+}
+
+int DirectorySystem::DeleteFilePath(const char *dst)
+{
+    wchar_t wcdst[CHAR_INIT_LENGTH] = {0};
+    FromUTF8ToSystemPath(wcdst, dst, true);
+    return _wremove(wcdst);
+}
+
+bool DirectorySystem::ExistFilePath(const char *path)
+{
+    if (strlen(c) >= CHAR_INIT_LENGTH)
+        THROW("Template stack char buffer is not enough");
+
+    wchar_t wc[CHAR_INIT_LENGTH];
+    FromUTF8ToSystemPath((void *)wc, c, true);
+    DWORD dwAttrib = GetFileAttributes(wc);
+
+    return (dwAttrib != INVALID_FILE_ATTRIBUTES) &&
+           !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY);
+}
+
 // 순소 폴더 경로 리턴
 std::string DirectorySystem::GetPathDirectory(const char* path)
 {

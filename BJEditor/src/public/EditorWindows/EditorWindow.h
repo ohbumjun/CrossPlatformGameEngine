@@ -109,6 +109,8 @@ namespace HazelEditor
 
         Hazel::RingBuffer<ProgressData> _progressQueue;
         std::queue<float> _seconds;
+
+        ProgressData _lastProgressData;
 	};
 };
 

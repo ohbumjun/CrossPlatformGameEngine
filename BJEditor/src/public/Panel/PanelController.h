@@ -22,10 +22,7 @@ public:
 	template <typename T>
     T *CreatePanel()
     {
-        // return static_cast<T *>(CreatePanel(Hazel::Reflection::GetTypeID<T>()));
-        return static_cast<T *>(CreatePanel([](void *ptr) {
-            return new (ptr) T();
-        } , Hazel::Reflection::GetTypeID<T>()));
+        return static_cast<T *>(CreatePanel(Hazel::Reflection::GetTypeID<T>()));
     }
 
     template <typename T>
@@ -34,9 +31,7 @@ public:
         return static_cast<T *>(FindPanel(Hazel::Reflection::GetTypeID<T>()));
     }
     // nPanel *CreatePanel(const Hazel::TypeId &type, void *monoScriptPanel = nullptr);
-    Panel *CreatePanel(
-        const std::function<void *()> &constructor,
-        const Hazel::TypeId &type);
+    Panel *CreatePanel(const Hazel::TypeId &type);
 
     std::vector<Panel *> FindPanels(const Hazel::TypeId &type) const;
 

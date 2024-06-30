@@ -18,8 +18,6 @@ namespace HazelEditor
 
         void Present();
 
-        void Prepare();
-
         // Editor Run Method
         virtual void PeekEvent();
         // Editor Run Method

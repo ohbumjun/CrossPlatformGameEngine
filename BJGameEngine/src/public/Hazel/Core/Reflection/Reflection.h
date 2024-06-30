@@ -5,6 +5,7 @@
 #include "TypeUtils.h"
 #include "VariableId.h"
 #include "hzpch.h"
+#include "Hazel/Core/Allocation/Allocator/DefaultHeapAllocator.h"
 
 // ex)
 // Transform Component 의 size 를 정상적으로 계산하기
@@ -343,6 +344,11 @@ public:
     static bool IsIntegral(TypeId id);
     static bool IsFloatingPoint(TypeId id);
     static bool IsTriviallyCopyable(TypeId id);
+
+    static DefaultHeapAllocator *GetAllocator();
+
+	// @brief type 값에 해당하는 메모리를 할당하여 반환
+    static void *CreateTarget(const TypeId type);
 
     static void Regist(const TypeId type, TypeInfo &&info);
 
@@ -851,6 +857,7 @@ inline void Reflection::RegisterBase()
 
     baseTypeInfo->subTypes.push_back(subType);
 }
+
 
 template <typename T>
 inline TypeInfo *Reflection::GetTypeInfo()

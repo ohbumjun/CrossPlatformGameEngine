@@ -30,10 +30,6 @@ public:
     {
         return 0;
     }
-    inline Hazel::TypeId GetType() const override
-    {
-        return Hazel::Reflection::GetTypeID<MessagePanel>();
-    }
 
 protected:
     void onGUI() override final;

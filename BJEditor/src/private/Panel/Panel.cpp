@@ -20,10 +20,10 @@ void Panel::setUniqueName(const char *format, ...)
     char buffer[1042] = {
         0,
     };
-    va_list args;
-    va_start(args, format);
-    vsnprintf(buffer, 1042, format, args);
-    va_end(args);
+    va_list rawBufArgs;
+    va_start(rawBufArgs, format);
+    vsnprintf(buffer, 1042, format, rawBufArgs);
+    va_end(rawBufArgs);
 
     // 1. Determine required buffer size (avoid hardcoding)
     std::size_t requiredSize =

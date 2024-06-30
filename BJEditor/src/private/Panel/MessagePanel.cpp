@@ -49,5 +49,4 @@ void MessagePanel::onMessageGUI()
 
     ImGui::Separator();
 }
-};
-} // namespace HazelEditor
+};// namespace HazelEditor

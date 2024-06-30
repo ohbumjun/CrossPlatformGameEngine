@@ -4,6 +4,8 @@
 
 namespace Hazel
 {
+static DefaultHeapAllocator s_DefaultHeapAllocator;
+
 #pragma region>> field
 
 
@@ -293,6 +295,26 @@ bool Reflection::IsTriviallyCopyable(TypeId id)
     return typeInfo.m_Flags[TypeFlags_IsTriviallyCopyable];
 }
 
+DefaultHeapAllocator *Reflection::GetAllocator()
+{
+    return &s_DefaultHeapAllocator;
+}
+
+void *Reflection::CreateTarget(const TypeId type)
+{
+    DefaultHeapAllocator* allocator = GetAllocator();
+    
+    if (!IsRegistered(type))
+    {
+        assert("Type is not registed");
+    }
+
+    static StaticContainerData &containerData = getStaticContainerData();
+
+    const TypeInfo& typeInfo = containerData.typeInfos[type];
+
+    return allocator->Allocate(typeInfo.m_Size, __FILE__, __LINE__);
+}
 /*
 void LvReflection::Regist(const TypeId type, TypeInfo&& info)
 {
