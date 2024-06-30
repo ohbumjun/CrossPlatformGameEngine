@@ -2,6 +2,7 @@
 
 #include "Hazel/Scene/Component/Component.h"
 #include "Hazel/Scene/SceneCamera.h"
+#include "Panel/Panel.h"
 
 namespace Hazel
 {
@@ -10,7 +11,7 @@ class EditorCamera;
 
 namespace HazelEditor
 {
-class CameraPanel
+class CameraPanel : public Panel
 {
 public:
     /*

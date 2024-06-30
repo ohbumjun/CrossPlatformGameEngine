@@ -2,7 +2,7 @@
 
 #include "Hazel/Scene/Entity.h"
 #include "Hazel/Scene/Scene.h"
-
+#include "Panel/Panel.h"
 #include <glm/gtc/type_ptr.hpp>
 
 // Editor 에 있는 코드이지만, Scene 에 접근할 수 있게 하기 위해
@@ -10,7 +10,7 @@
 // Hazel Editor Namespace 로 설정한다.
 namespace Hazel
 {
-class SceneHierarchyPanel
+class SceneHierarchyPanel : HazelEditor::Panel
 {
 public:
     SceneHierarchyPanel(){};
@@ -23,6 +23,10 @@ public:
     Entity GetSelectedEntity() const
     {
         return m_SelectedEntity;
+    }
+    inline Hazel::TypeId GetType() const override
+    {
+        return Hazel::Reflection::GetTypeID<SceneHierarchyPanel>();
     }
 
 private:

@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "Panel/Panel.h"
+#include "Hazel/Core/Reflection/TypeId.h"
 
 // Editor 에 있는 코드이지만, Scene 에 접근할 수 있게 하기 위해
 // 예외적으로 하나만 HazelEditor 가 아니라
@@ -12,5 +13,10 @@ class NativePanel : public Panel
 {
     friend class PanelController;
     friend class EditorWindow;
+public:
+    inline Hazel::TypeId GetType() const override
+    {
+        return Hazel::Reflection::GetTypeID<NativePanel>();
+    }
 };
 } // namespace Hazel

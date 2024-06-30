@@ -55,9 +55,20 @@ public:
         return _id;
     }
 
-protected:
-    bool _isOpen = false;
+    /**
+	 * \brief 최대로 열 수 있는 창 갯수 (0인 경우 무제한)
+	 */
+    virtual size_t GetMaxCount() const
+    {
+        return 1;
+    }
 
+    virtual Hazel::TypeId GetType() const = 0;
+
+
+protected:
+
+    void setUniqueName(const char *format, ...);
     virtual void onInitialize()
     {
     }
@@ -70,6 +81,8 @@ protected:
     virtual void onGUI()
     {
     }
+    bool _isOpen = false;
+
 
 private:
     uint32 _type = 0;
