@@ -2,6 +2,10 @@
 
 #include "ThreadVars.h"
 
+namespace Hazel
+{
+
+
 class ThreadUtils
 {
 public:
@@ -142,4 +146,5 @@ public:
         Semaphore *sema); // Semaphore 이용해서 lock 거는 함수
     static int WaitSemaphore(Semaphore *sema, int timeout);
 };
+
 } // namespace Hazel

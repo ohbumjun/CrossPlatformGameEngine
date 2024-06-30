@@ -6,7 +6,6 @@
 #include "Hazel/Core/Thread/ThreadUtil.h"
 namespace Hazel
 {
-
 template <typename T, typename TAllocator = AlignedAllocator<T>>
 class HAZEL_API RingBuffer
 {

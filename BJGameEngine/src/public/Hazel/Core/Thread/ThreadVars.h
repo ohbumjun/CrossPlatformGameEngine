@@ -107,3 +107,4 @@ public:
 private:
     Atomic flag;
 };
+} // namespace Hazel

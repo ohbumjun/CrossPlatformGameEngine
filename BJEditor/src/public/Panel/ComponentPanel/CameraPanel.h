@@ -21,5 +21,10 @@ public:
 		*/
     static void DrawCameraComponent(Hazel::Component &inputComponent);
     static void DrawEditorCamera(Hazel::EditorCamera *editorCamera);
+
+	inline Hazel::TypeId GetType() const override
+    {
+        return Hazel::Reflection::GetTypeID<CameraPanel>();
+    }
 };
 } // namespace HazelEditor

@@ -2,6 +2,8 @@
 #include "EditorWindows/GuiWindow.h"
 #include "Hazel/Core/Reflection/TypeId.h"
 #include "Panel/Panel.h"
+#include "Panel/PanelController.h"
+#include "Panel/ProgressPanel.h"
 #include "Hazel/Core/Reflection/Reflection.h"
 #include "Hazel/Core/DataStructure/RingBuffer.h"
 #include <queue>
@@ -12,20 +14,13 @@ namespace HazelEditor
 	{
     public:
         static EditorWindow *GetEditorWindow();
-        /**
-	 * @brief 내부에서 관리되는 Panel 인스턴스 생성
-	 * @details 멀티 쓰레드에서 호출 시 메인 쓰레드 처리를 하기는 하지만, 메인 쓰레드가 잠겨있는 경우 경쟁상태에 빠짐.
-	 */
+        
         template <typename T>
         inline T *CreatePanel()
         {
             return (T *)CreatePanel(Hazel::Reflection::GetTypeId<T>());
         }
-
-        /**
-	 * @brief 내부에서 관리되는 Panel 인스턴스 생성
-	 * @details 멀티 쓰레드에서 호출 시 메인 쓰레드 처리를 하기는 하지만, 메인 쓰레드가 잠겨있는 경우 경쟁상태에 빠짐.
-	 */
+        
         Panel *CreatePanel(const Hazel::TypeId &type);
 
         template <typename T>
@@ -44,9 +39,6 @@ namespace HazelEditor
 
         void OpenMessagePopup(const std::string &title, const std::string &message);
 
-        /**
-	 * @brief [Thread-safe] 현재 에디터에 진행 상태창를 표시
-	 */
         void DisplayProgressBar(float progress,
                                 const char *title,
                                 const char *message,
@@ -113,7 +105,7 @@ namespace HazelEditor
 
         PanelController *_panelController = nullptr;
 
-        Popup::LvProgressPanel *_progress = nullptr;
+        ProgressPanel *_progress = nullptr;
 
         Hazel::RingBuffer<ProgressData> _progressQueue;
         std::queue<float> _seconds;

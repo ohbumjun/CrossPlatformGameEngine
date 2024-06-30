@@ -10,11 +10,16 @@
 // Hazel Editor Namespace 로 설정한다.
 namespace HazelEditor
 {
-class ProjectSelectPanel
+class DockSpacePanel
 {
 public:
     ProjectSelectPanel(){};
     void OnImGuiRender();
+
+    inline Hazel::TypeId GetType() const override
+    {
+        return Hazel::Reflection::GetTypeID<DockSpacePanel>();
+    }
 
 private:
     friend class Scene;

@@ -41,6 +41,7 @@ public:
     std::vector<Panel *> FindPanels(const Hazel::TypeId &type) const;
 
     Panel *FindPanel(const char *name) const;
+    Panel *FindPanel(const Hazel::TypeId &type) const;
 
     void Draw();
 
@@ -50,7 +51,6 @@ public:
     {
         return _panels.size();
     }
-
 private:
     uint64 makeUniquePanelId(Hazel::TypeId type);
     Panel *addPanel(Panel *panel, const uint32 &monoType);

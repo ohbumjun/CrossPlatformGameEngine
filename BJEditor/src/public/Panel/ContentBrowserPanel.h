@@ -2,16 +2,22 @@
 
 #include "Hazel/Resource/Image/Texture.h"
 #include <filesystem>
+#include "Panel/Panel.h"
 
 namespace HazelEditor
 {
 
-class ContentBrowserPanel
+class ContentBrowserPanel : public Panel
 {
 public:
     ContentBrowserPanel();
 
     void OnImGuiRender();
+
+    inline Hazel::TypeId GetType() const override
+    {
+        return Hazel::Reflection::GetTypeID<ContentBrowserPanel>();
+    }
 
 private:
     std::filesystem::path m_CurrentDirectory;

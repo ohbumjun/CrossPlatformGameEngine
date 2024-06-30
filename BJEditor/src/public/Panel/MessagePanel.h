@@ -18,12 +18,6 @@ public:
         OK,
         CANCEL,
     };
-    
-	void Open(const char *title, const char *message, 
-        bool canCloase = true);
-    void Open(const char *title,
-              const char *message,
-              std::function<void(OkCancel)> result);
     void Open(const char *title,
               const char *message,
               std::function<void(int)> onClose);

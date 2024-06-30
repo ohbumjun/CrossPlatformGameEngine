@@ -90,6 +90,20 @@ Panel *PanelController::FindPanel(const char *name) const
 
     return nullptr;
 }
+Panel *PanelController::FindPanel(const Hazel::TypeId &type) const
+{
+    for (auto it = _panels.begin(); it != _panels.end(); ++it)
+    {
+        Panel *panel = it->second;
+
+        if (panel->_type == type)
+        {
+            return panel;
+        }
+    }
+
+    return nullptr;
+}
 void PanelController::Draw()
 {
     // 현재는 메인 쓰레드여야만 한다.
