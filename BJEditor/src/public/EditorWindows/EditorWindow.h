@@ -6,6 +6,7 @@
 #include "Panel/ProgressPanel.h"
 #include "Hazel/Core/Reflection/Reflection.h"
 #include "Hazel/Core/DataStructure/RingBuffer.h"
+#include "Hazel/Core/Thread/ThreadVars.h"
 #include <queue>
 
 namespace HazelEditor
@@ -107,8 +108,12 @@ namespace HazelEditor
 
         ProgressPanel *_progress = nullptr;
 
+	    Hazel::CRIC_SECT *_mutex = nullptr;
+
         Hazel::RingBuffer<ProgressData> _progressQueue;
         std::queue<float> _seconds;
+
+        bool _presentable = true;
 
         ProgressData _lastProgressData;
 	};

@@ -2,12 +2,12 @@
 
 #include "Hazel/Resource/Image/Texture.h"
 #include <filesystem>
-#include "Panel/Panel.h"
+#include "Panel/NativePanel.h"
 
 namespace HazelEditor
 {
 
-class ContentBrowserPanel : public Panel
+class ContentBrowserPanel : public NativePanel
 {
 public:
     ContentBrowserPanel();

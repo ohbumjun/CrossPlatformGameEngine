@@ -1,9 +1,12 @@
 #include "hzpch.h"
 #include "EditorWindows/EditorWindow.h"
 #include "Panel/PanelController.h"
+#include "Panel/DockSpacePanel.h"
 #include "imgui.h"
 #include "Hazel/Core/Thread/ThreadUtil.h"
 #include "Hazel/Core/Thread/ThreadExecuter.h"
+#include "ProjectContext.h"
+#include "Project.h"
 
 namespace HazelEditor
 {
@@ -100,16 +103,14 @@ void EditorWindow::onUpdate(float deltatime)
 {
     // LV_CHECK(_engine->renderer != nullptr, "Engine renderer is nullptr");
 
-    LvProjectContext *context = lv_project_get_context();
+    ProjectContext *context = BJ_GetProjectContext();
 
     float delta = deltatime;
     if (nullptr == context || nullptr == context->project ||
-        context->project->GetPlayState() == LvProject::PlayState::STOP)
+        context->project->GetPlayState() == Project::PlayState::STOP)
     {
         delta = 0;
     }
-
-    LvEditorScene *scene = nullptr;
 
     onPrepareGUI();
 
@@ -117,21 +118,21 @@ void EditorWindow::onUpdate(float deltatime)
 
     onFinishGUI();
 
-    if (_engine->context->shouldClose)
-    {
-        context->project->Stop();
-        _engine->context->shouldClose = false;
-    }
+    // if (_engine->context->shouldClose)
+    // {
+    //     context->project->Stop();
+    //     _engine->context->shouldClose = false;
+    // }
 }
 
 void EditorWindow::onOpen()
 {
     // LV_CHECK_MAIN_THREAD();
 
-    _mutex = lv_mutex_create();
+    _mutex = Hazel::ThreadUtils::CreateCritSect();
 
-    _panelController = _editorWindowPanelController =
-        new LvPanelController(this);
+    // _panelController = _editorWindowPanelController = new PanelController(this);
+    _panelController =  new PanelController(this);
 
     bool useDockSpace = true;
 
@@ -145,51 +146,50 @@ void EditorWindow::onOpen()
 
 void EditorWindow::onClose()
 {
-    if (LvProject::IsLoaded())
+    if (Project::IsLoaded())
     {
-        LvProject::Close();
+        Project::Close();
     }
 
-    delete _editorWindowPanelController;
+    delete _panelController;
 
-    lv_mutex_destroy(_mutex);
+    Hazel::ThreadUtils::DestroyCritSect(_mutex);
 }
 
 void EditorWindow::onPrepareGUI()
 {
     // LV_PROFILE_EDITOR();
-
-    ImGuiContext *context = static_cast<ImGuiContext *>(_guiContext);
-    ImGuiIO &io = context->IO;
-
-    io.DisplaySize.x = static_cast<float>(GetWidth());
-    io.DisplaySize.y = static_cast<float>(GetHeight());
-
-    int fx, fy;
-    lv_window_get_framebuffer_size(_handle, &fx, &fy);
-
-    io.DisplayFramebufferScale.x =
-        static_cast<float>(fx) / static_cast<float>(GetWidth());
-    io.DisplayFramebufferScale.y =
-        static_cast<float>(fy) / static_cast<float>(GetHeight());
-
-    io.MousePos = ImVec2(-LV_FLT_MAX, -LV_FLT_MAX);
-    memset(io.MouseDown, 0, sizeof(io.MouseDown));
-
-    const uint32 time = lv_time_milli();
-    const float currentTime = static_cast<float>(time) / 1000.f;
-    static float contextTime = 0.f;
-
-    io.DeltaTime =
-        contextTime > 0.0f ? (currentTime - contextTime) : (1.0f / 60.0f);
-    if (io.DeltaTime <= 0.0f)
-    {
-        io.DeltaTime = LV_EPS;
-    }
+    // ImGuiContext *context = static_cast<ImGuiContext *>(_guiContext);
+    // ImGuiIO &io = context->IO;
+    // 
+    // io.DisplaySize.x = static_cast<float>(GetWidth());
+    // io.DisplaySize.y = static_cast<float>(GetHeight());
+    // 
+    // int fx, fy;
+    // lv_window_get_framebuffer_size(_handle, &fx, &fy);
+    // 
+    // io.DisplayFramebufferScale.x =
+    //     static_cast<float>(fx) / static_cast<float>(GetWidth());
+    // io.DisplayFramebufferScale.y =
+    //     static_cast<float>(fy) / static_cast<float>(GetHeight());
+    // 
+    // io.MousePos = ImVec2(-LV_FLT_MAX, -LV_FLT_MAX);
+    // memset(io.MouseDown, 0, sizeof(io.MouseDown));
+    // 
+    // const uint32 time = lv_time_milli();
+    // const float currentTime = static_cast<float>(time) / 1000.f;
+    // static float contextTime = 0.f;
+    // 
+    // io.DeltaTime =
+    //     contextTime > 0.0f ? (currentTime - contextTime) : (1.0f / 60.0f);
+    // if (io.DeltaTime <= 0.0f)
+    // {
+    //     io.DeltaTime = LV_EPS;
+    // }
 
     contextTime = currentTime;
 
-    Base::onPrepareGUI();
+    GuiWindow::onPrepareGUI();
 
     ImGui::NewFrame();
     }
@@ -215,7 +215,7 @@ void EditorWindow::onGUI()
 
     if (_presentable)
     {
-        _editorWindowPanelController->Draw();
+        _panelController->Draw();
     }
     };
 
@@ -224,12 +224,11 @@ void EditorWindow::onNextFrame()
     //Base::onNextFrame();
     if (_presentable)
     {
-        _submitIndex = _renderContext->GetSubmitIndex(_surface->swapchain);
-        _context.renderer->NextFrame(
-            _surface->swapchain); //editor에서 추가한 renderPath 모두 설정
-        _engine->renderer->NextFrame(_surface->swapchain);
-
-        LvSceneGraphInternal::NextFrame();
+       // _submitIndex = _renderContext->GetSubmitIndex(_surface->swapchain);
+       // _context.renderer->NextFrame(
+       //     _surface->swapchain); //editor에서 추가한 renderPath 모두 설정
+       // _engine->renderer->NextFrame(_surface->swapchain);
+       // LvSceneGraphInternal::NextFrame();
     }
 
     for (size_t i = 0; i < _childs.size(); ++i)
