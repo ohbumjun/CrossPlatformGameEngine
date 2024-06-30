@@ -13,6 +13,12 @@ void FileManager::Initialize(const char *projectPath)
 
     PathManager::initialize();
 }
+
+void FileManager::Finalize()
+{
+
+}
+
 std::string FileManager::ToAbsolutePath(const char *relativePath)
 {
     return Hazel::DirectorySystem::CombinePath(_projectPath.c_str(), relativePath);

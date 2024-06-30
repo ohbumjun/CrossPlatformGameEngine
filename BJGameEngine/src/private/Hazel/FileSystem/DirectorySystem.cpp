@@ -426,8 +426,8 @@ bool DirectorySystem::CopyFilePath(const char *dst, const char *src)
     char cdst[CHAR_INIT_LENGTH] = {0};
     char csrc[CHAR_INIT_LENGTH] = {0};
 
-    StringUtil::pr_str_replace_opt(cdst, dst, "/", ds);
-    StringUtil::pr_str_replace_opt(csrc, src, "/", ds);
+    Utils::StringUtil::ReplaceStrOpt(cdst, dst, "/", ds);
+    Utils::StringUtil::ReplaceStrOpt(csrc, src, "/", ds);
 
     wchar_t wcdst[CHAR_INIT_LENGTH] = {0};
     wchar_t wcsrc[CHAR_INIT_LENGTH] = {0};
@@ -492,15 +492,126 @@ int DirectorySystem::DeleteFilePath(const char *dst)
 
 bool DirectorySystem::ExistFilePath(const char *path)
 {
-    if (strlen(c) >= CHAR_INIT_LENGTH)
+    if (strlen(path) >= CHAR_INIT_LENGTH)
         THROW("Template stack char buffer is not enough");
 
     wchar_t wc[CHAR_INIT_LENGTH];
-    FromUTF8ToSystemPath((void *)wc, c, true);
+    FromUTF8ToSystemPath((void *)wc, path, true);
     DWORD dwAttrib = GetFileAttributes(wc);
 
     return (dwAttrib != INVALID_FILE_ATTRIBUTES) &&
            !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY);
+}
+
+bool DirectorySystem::CreateDirectoryPath(const char *path)
+{
+    const wchar_t ds[2] = {DIRECTORY_SEPARATOR_CHAR, 0};
+    wchar_t wc[CHAR_INIT_LENGTH];
+
+    FromUTF8ToSystemPath((void *)wc, path, true);
+
+    wchar_t *ptr = Utils::pr_strtok(wc, ds);
+    wchar_t acc[CHAR_INIT_LENGTH] = {0};
+
+    while (ptr != NULL)
+    {
+        Utils::pr_strcat(acc, ptr);
+        Utils::pr_strcat(acc, ds);
+
+        DWORD dwAttrib = GetFileAttributes(acc);
+        bool existsDir = (dwAttrib != INVALID_FILE_ATTRIBUTES &&
+                          (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+
+        if (!existsDir)
+        {
+            if (CreateDirectoryW((LPCWSTR)acc, NULL) == false)
+            {
+                return false;
+            }
+        }
+        ptr = Utils::pr_strtok<wchar_t>(NULL, ds);
+    }
+
+    return true;
+}
+
+bool DirectorySystem::ExistDirectoryPath(const char *path)
+{
+    if (strlen(path) >= CHAR_INIT_LENGTH)
+        THROW("Template stack char buffer is not enough");
+
+    wchar_t wc[CHAR_INIT_LENGTH] = {
+        0,
+    };
+
+    FromUTF8ToSystemPath((void *)wc, path, true);
+
+    DWORD dwAttrib = GetFileAttributes(wc);
+
+    return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
+            (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+}
+
+bool DirectorySystem::CopyDirectoryPath(const char *dst, const char *src)
+{
+    wchar_t wc[CHAR_INIT_LENGTH];
+    FromUTF8ToSystemPath((void *)wc, src, true);
+
+    std::wstring new_sf = wc;
+    new_sf += L"\\*";
+
+    WCHAR sf[MAX_PATH + 1];
+    WCHAR tf[MAX_PATH + 1];
+
+    FromUTF8ToSystemPath((void *)wc, dst, true);
+
+    wcscpy_s(sf, MAX_PATH, new_sf.c_str());
+    wcscpy_s(tf, MAX_PATH, wc);
+
+    sf[lstrlenW(sf) + 1] = 0;
+    tf[lstrlenW(tf) + 1] = 0;
+
+    SHFILEOPSTRUCTW s = {0};
+    s.wFunc = FO_COPY;
+    s.pTo = tf;
+    s.pFrom = sf;
+    s.fFlags = FOF_SILENT | FOF_NOCONFIRMMKDIR | FOF_NOCONFIRMATION |
+               FOF_NOERRORUI | FOF_NO_UI;
+    const int res = SHFileOperationW(&s);
+
+    return res == 0;
+}
+
+bool DirectorySystem::RemoveDirectoryPath(const char *inputPath)
+{
+    if (strlen(inputPath) >= CHAR_INIT_LENGTH)
+        THROW("Template stack char buffer is not enough");
+
+    const char ds[2] = {DIRECTORY_SEPARATOR_CHAR, 0};
+    wchar_t wc[CHAR_INIT_LENGTH];
+
+    FromUTF8ToSystemPath((void *)wc, inputPath, true);
+
+    // LvFixedWString<CHAR_INIT_LENGTH> path(wc);
+    std::wstring path(wc);
+
+    // path.append(L'\0');
+    // path.append(L'\0');
+    path += L"\0";
+    path += L"\0";
+
+    SHFILEOPSTRUCTW fileOperation;
+    fileOperation.wFunc = FO_DELETE;
+    // fileOperation.pFrom = path.GetCharArray();
+
+    fileOperation.pFrom = path.c_str();
+    fileOperation.fFlags = FOF_NO_UI | FOF_NOCONFIRMATION;
+
+    const int result = ::SHFileOperationW(&fileOperation);
+    if (result != 0)
+        return false;
+
+    return true;
 }
 
 // 순소 폴더 경로 리턴

@@ -11,6 +11,8 @@ class FileManager
 public:
     static void Initialize(const char* projectPath);
 
+	static void Finalize();
+
     /**
 	 * - 프로젝트 폴더 기준의 상대경로를 절대경로로 변환해주는 함수
 	 * ex) relativePath 프로젝트 상대경로 ( "Resources/target.png" )
