@@ -33,8 +33,8 @@ Panel* EditorWindow::CreatePanel(const Hazel::TypeId& type)
         });
     }
 
-    // @donghun 이쪽에서 걸리는 케이스가 발견되면 DispatchQueue의 Sync가 제대로 동작하지 않은것.
     HZ_CORE_ASSERT(created, "Failed to create panel");
+
     return result;
 }
 std::vector<Panel*> EditorWindow::FindPanels(const Hazel::TypeId& type) const

@@ -7,6 +7,7 @@ namespace HazelEditor
 {
 	class MenuNode
 	{
+    public:
         static MenuNode *Create(const char *rootName = nullptr);
         static void Destroy(MenuNode *);
         std::vector<MenuNode *> children;

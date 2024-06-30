@@ -1,6 +1,12 @@
 ﻿#pragma once
 
 #include "Panel/NativePanel.h"
+#include "Panel/MenuNode.h"
+#include "Hazel/Core/Thread/ThreadVars.h"
+
+/* #include "engine/thirdparty/imgui/imgui.h" */ typedef int ImGuiWindowFlags;
+/* #include "engine/thirdparty/imgui/imgui.h" */ typedef int ImGuiDockNodeFlags;
+
 
 // Editor 에 있는 코드이지만, Scene 에 접근할 수 있게 하기 위해
 // 예외적으로 하나만 HazelEditor 가 아니라
@@ -23,6 +29,11 @@ public:
         return Hazel::Reflection::GetTypeID<DockSpacePanel>();
     }
 
+    void RefreshMenu()
+    {
+
+    }
+
 protected:
     void onInitialize() override;
     void onGUI() override;
@@ -35,12 +46,13 @@ protected:
     void drawDockingspace();
     void drawStatusBar();
 
-    ImGuiDockNodeFlags _dockNodeFlags = 0;
-    ImGuiWindowFlags _windowFlags = 0;
-    MenuNode *_rootMenu = nullptr;
-    PanelController *_panelController = nullptr;
-    std::string _statustBarText;
-    Hazel::Atomic *_runningProgressCount = nullptr;
+    bool m_RefreshMenu;
+    ImGuiDockNodeFlags m_DockNodeFlags = 0;
+    ImGuiWindowFlags m_WindowFlags = 0;
+    MenuNode *m_RootMenu = nullptr;
+    PanelController *m_PanelController = nullptr;
+    std::string m_StatustBarText;
+    Hazel::Atomic *m_RunningProgressCount = nullptr;
 
 private:
 };
