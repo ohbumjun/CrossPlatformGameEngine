@@ -84,6 +84,10 @@ protected:
     {
     }
     bool _isOpen = false;
+    /**
+	 * \brief 현재 프레임에서 띄어쓰기 1개의 폰트 크기
+	 */
+    ImVec2 unitSize;
 
 private:
     uint32 _type = 0;

@@ -4,7 +4,9 @@
 #include "ProjectContext.h"
 #include "EditorContext.h"
 #include "Project.h"
+#include "EditorWindows/EditorWindow.h"
 #include "Hazel/Core/Allocation/Allocator/EngineAllocator.h"
+#include "Hazel/FileSystem/DirectorySystem.h"
 #include "imgui.h"
 #include "IconsFontAwesome6.h"
 
@@ -21,7 +23,8 @@ void DockSpacePanel::onInitialize()
                    ImGuiWindowFlags_NoBringToFrontOnFocus |
                    ImGuiWindowFlags_NoNavFocus;
 
-    m_PanelController = new (Hazel::BJ_EngineAllocate(sizeof(PanelController))) PanelController(GetWindow());
+    void* panelControllerPtr = Hazel::BJ_EngineAllocate(sizeof(PanelController));
+    m_PanelController = new (panelControllerPtr) PanelController(BJ_GetEditorWindow());
     m_StatustBarText = "";
 }
 void DockSpacePanel::onGUI()
@@ -557,14 +560,17 @@ void DockSpacePanel::drawDockingspace()
                                 for (size_t i = 0, max = paths.size(); i < max;
                                      ++i)
                                 {
-                                    std::string parent = lv_path_name(
-                                        lv_path_parent(paths[i].c_str())
-                                            .c_str());
-                                    if (parent == nullptr)
-                                        parent = "";
+                                    // std::string parent = lv_path_name lv_path_parent(paths[i].c_str()).c_str());
+                                    std::string parent = Hazel::DirectorySystem::GetPathame(Hazel::DirectorySystem::GetPathParent(paths[i].c_str()).c_str());
 
-                                    LvString name =
-                                        lv_path_name(paths[i].c_str());
+                                    // if (parent == nullptr)
+                                    if (parent.empty())
+                                    {
+                                        parent = "";
+                                    }
+
+                                    // std::string name = lv_path_name(paths[i].c_str());
+                                    std::string name = Hazel::DirectorySystem::GetPathame(paths[i].c_str());
 
                                     ImGui::PushID(i);
                                     if (drawButton(name.c_str()))
@@ -713,40 +719,40 @@ void DockSpacePanel::drawStatusBar()
         if (ImGui::IsWindowHovered() &&
             ImGui::IsMouseClicked(ImGuiMouseButton_Left))
         {
-            FocusingOrOpen<LvConsolePanel>();
+            // FocusingOrOpen<LvConsolePanel>();
         }
 
-        while (!_datas.IsEmpty())
-        {
-            LvCallStackLog::Data data;
-            if (_datas.Dequeue(data))
-            {
-                data.data.Replace("\n", " ");
-
-                switch (data.logType)
-                {
-                default:
-                case LvLog::Type::LOG_DEBUG:
-                    m_StatustBarText.FormatSelf("  " ICON_FA_COMMENT "  %s",
-                                               data.data.c_str());
-                    break;
-                case LvLog::Type::LOG_WARNING:
-                    m_StatustBarText.FormatSelf("  " ICON_FA_CIRCLE_EXCLAMATION
-                                               "  %s",
-                                               data.data.c_str());
-                    break;
-                case LvLog::Type::LOG_ERROR:
-                    m_StatustBarText.FormatSelf("  " ICON_FA_TRIANGLE_EXCLAMATION
-                                               "  %s",
-                                               data.data.c_str());
-                    break;
-                case LvLog::Type::LOG_CRASH:
-                    m_StatustBarText.FormatSelf("  " ICON_FA_BUG "  %s",
-                                               data.data.c_str());
-                    break;
-                }
-            }
-        }
+        // while (!_datas.IsEmpty())
+        // {
+        //     LvCallStackLog::Data data;
+        //     if (_datas.Dequeue(data))
+        //     {
+        //         data.data.Replace("\n", " ");
+        // 
+        //         switch (data.logType)
+        //         {
+        //         default:
+        //         case LvLog::Type::LOG_DEBUG:
+        //             m_StatustBarText.FormatSelf("  " ICON_FA_COMMENT "  %s",
+        //                                        data.data.c_str());
+        //             break;
+        //         case LvLog::Type::LOG_WARNING:
+        //             m_StatustBarText.FormatSelf("  " ICON_FA_CIRCLE_EXCLAMATION
+        //                                        "  %s",
+        //                                        data.data.c_str());
+        //             break;
+        //         case LvLog::Type::LOG_ERROR:
+        //             m_StatustBarText.FormatSelf("  " ICON_FA_TRIANGLE_EXCLAMATION
+        //                                        "  %s",
+        //                                        data.data.c_str());
+        //             break;
+        //         case LvLog::Type::LOG_CRASH:
+        //             m_StatustBarText.FormatSelf("  " ICON_FA_BUG "  %s",
+        //                                        data.data.c_str());
+        //             break;
+        //         }
+        //     }
+        // }
 
         ImGui::SetCursorPos(ImVec2(0.0f, 4.0f));
         ImGui::Text("%s", m_StatustBarText.c_str());
@@ -762,10 +768,10 @@ void DockSpacePanel::drawStatusBar()
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
                         ImVec2(ImGui::GetStyle().WindowPadding.x * 0.65f,
                                ImGui::GetStyle().WindowPadding.y * 0.65f));
-    bool isCrashRecording = LvCrashReporter::IsRecording();
-    if (isCrashRecording)
-        ImGui::PushStyleColor(ImGuiCol_WindowBg,
-                              ImGui::GetStyleColorVec4(ImGuiCol_PlotHistogram));
+    // bool isCrashRecording = LvCrashReporter::IsRecording();
+    // if (isCrashRecording)
+    //     ImGui::PushStyleColor(ImGuiCol_WindowBg,
+    //                           ImGui::GetStyleColorVec4(ImGuiCol_PlotHistogram));
 
     bool isDebuggerOpen = false;
     if (ImGui::Begin("Debugger", &_isOpen, statusBarWindowFlag))
@@ -776,11 +782,11 @@ void DockSpacePanel::drawStatusBar()
 
         ImGui::SetCursorPos(centerPos);
 
-        ImGui::ImageIcon(LvIconType::GIZMO_DEBUG,
-                         {ImGui::GetFontSize(), ImGui::GetFontSize()},
-                         {0, 0},
-                         {1, 1},
-                         ImGui::GetStyleColorVec4(ImGuiCol_Text));
+        // ImGui::ImageIcon(LvIconType::GIZMO_DEBUG,
+        //                  {ImGui::GetFontSize(), ImGui::GetFontSize()},
+        //                  {0, 0},
+        //                  {1, 1},
+        //                  ImGui::GetStyleColorVec4(ImGuiCol_Text));
 
         if (ImGui::IsWindowHovered() &&
             ImGui::IsMouseClicked(ImGuiMouseButton_Left))
@@ -788,8 +794,8 @@ void DockSpacePanel::drawStatusBar()
             isDebuggerOpen = true;
         }
     }
-    if (isCrashRecording)
-        ImGui::PopStyleColor();
+    // if (isCrashRecording)
+    //     ImGui::PopStyleColor();
     ImGui::PopStyleVar(3);
     ImGui::End(); // Debugger
     if (isDebuggerOpen)
@@ -848,32 +854,32 @@ void DockSpacePanel::drawStatusBar()
         if (ImGui::IsWindowHovered() &&
             ImGui::IsMouseClicked(ImGuiMouseButton_Left))
         {
-            LvProgress::ShowDetails();
+            // LvProgress::ShowDetails();
         }
 
-        const int count = nullptr != _runningProgressCount
-                              ? lv_atomic_get(_runningProgressCount)
-                              : 0;
-        ImGuiSpinnerFlags flags = ImGuiSpinnerFlags_None;
-        if (0 < count)
-        {
-            flags = ImGuiSpinnerFlags_Running;
-        }
-        else
-        {
-            flags = ImGuiSpinnerFlags_Check;
-        }
-
-        auto cursor = ImGui::GetCursorPos();
-        cursor.x += unitSize.x * 2.75f;
-        cursor.y += unitSize.y * 0.15f;
-
-        ImGui::SetCursorPos(cursor);
-        ImGuiEx::Spinner("spinner",
-                         unitSize.x * 2.5f,
-                         2,
-                         ImGui::GetColorU32(ImGuiCol_Text),
-                         flags);
+        // const int count = nullptr != _runningProgressCount
+        //                       ? lv_atomic_get(_runningProgressCount)
+        //                       : 0;
+        // ImGuiSpinnerFlags flags = ImGuiSpinnerFlags_None;
+        // if (0 < count)
+        // {
+        //     flags = ImGuiSpinnerFlags_Running;
+        // }
+        // else
+        // {
+        //     flags = ImGuiSpinnerFlags_Check;
+        // }
+        // 
+        // auto cursor = ImGui::GetCursorPos();
+        // cursor.x += unitSize.x * 2.75f;
+        // cursor.y += unitSize.y * 0.15f;
+        // 
+        // ImGui::SetCursorPos(cursor);
+        // ImGuiEx::Spinner("spinner",
+        //                  unitSize.x * 2.5f,
+        //                  2,
+        //                  ImGui::GetColorU32(ImGuiCol_Text),
+        //                  flags);
     }
     ImGui::PopStyleVar(3);
     ImGui::End(); // Indicator

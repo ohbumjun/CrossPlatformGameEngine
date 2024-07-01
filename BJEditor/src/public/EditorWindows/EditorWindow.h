@@ -14,8 +14,9 @@ namespace HazelEditor
 	class EditorWindow : public GuiWindow
 	{
     public:
-        static EditorWindow *GetEditorWindow();
         
+        EditorWindow();
+
         template <typename T>
         inline T *CreatePanel()
         {
@@ -117,5 +118,8 @@ namespace HazelEditor
 
         ProgressData _lastProgressData;
 	};
-};
+
+EditorWindow *BJ_GetEditorWindow();
+
+    };
 

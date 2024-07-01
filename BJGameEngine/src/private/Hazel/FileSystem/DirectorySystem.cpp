@@ -614,6 +614,30 @@ bool DirectorySystem::RemoveDirectoryPath(const char *inputPath)
     return true;
 }
 
+std::string DirectorySystem::GetPathParent(const char *path)
+{
+    std::string result("");
+    const char ds[2] = {DIRECTORY_SEPARATOR_CHAR, 0};
+    char conv[CHAR_INIT_LENGTH] = {0};
+
+    ToWinSystemPath(conv, path);
+
+    const char *ptr = Utils::pr_strrstr(conv, ds);
+
+    //strcpy(conv, (const char*)(ptr - conv));
+
+    if (ptr ==
+        nullptr) //@yuiena : parent folder 가 없는 path를 넣으면 에러가 발생. 그러므로 해당 코드 추가.
+    {
+        return result;
+    }
+    else
+    {
+        result.append(conv, 0, static_cast<int>(ptr - conv));
+        return result;
+    }
+}
+
 // 순소 폴더 경로 리턴
 std::string DirectorySystem::GetPathDirectory(const char* path)
 {

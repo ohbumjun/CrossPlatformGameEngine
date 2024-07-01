@@ -10,9 +10,16 @@
 
 namespace HazelEditor
 {
-EditorWindow *EditorWindow::GetEditorWindow()
+EditorWindow *s_EditorWindow = nullptr;
+
+EditorWindow *BJ_GetEditorWindow()
 {
     return nullptr;
+}
+
+EditorWindow::EditorWindow()
+{
+    s_EditorWindow = this;
 }
 
 Panel* EditorWindow::CreatePanel(const Hazel::TypeId& type)
