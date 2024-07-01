@@ -1,11 +1,11 @@
-﻿#include "Hazel/FileSystem/FileMemory.h"
+﻿#include "Hazel/FileSystem/FileStream.h"
 #include "Hazel/FileSystem/DirectorySystem.h"
 #include "hzpch.h"
 
 namespace Hazel
 {
 
-FileMemory::FileMemory(HANDLE file) : m_FileHandle(file)
+FileStream::FileStream(HANDLE file) : m_FileHandle(file)
 {
     m_Position = 0;
     m_Length = 0;
@@ -30,22 +30,22 @@ FileMemory::FileMemory(HANDLE file) : m_FileHandle(file)
    Hazel::DirectorySystem::SeekFile(m_FileHandle, 0, FilePosMode::BEGIN);
 }
 
-FileMemory::FileMemory(const char *path, FileOpenMode mode)
-    : FileMemory(Hazel::DirectorySystem::OpenFile(path,
+FileStream::FileStream(const char *path, FileOpenMode mode)
+    : FileStream(Hazel::DirectorySystem::OpenFile(path,
                                                   FileAccessMode::READ_WRITE,
                                                   mode))
 {
 }
 
-FileMemory::FileMemory(const char *path,
+FileStream::FileStream(const char *path,
                        FileOpenMode mode,
                        FileAccessMode access)
-    : FileMemory(Hazel::DirectorySystem::OpenFile(path, access, mode))
+    : FileStream(Hazel::DirectorySystem::OpenFile(path, access, mode))
 
 {
 }
 
-FileMemory::~FileMemory()
+FileStream::~FileStream()
 {
     if (m_FileHandle != INVALID_HANDLE)
     {
@@ -54,7 +54,7 @@ FileMemory::~FileMemory()
     }
 }
 
-int64 FileMemory::GetCurrentPos()
+int64 FileStream::GetCurrentPos()
 {
     int64 position = 0;
 
@@ -76,7 +76,7 @@ int64 FileMemory::GetCurrentPos()
     return position;
 }
 
-void FileMemory::SetPos(int64 pos)
+void FileStream::SetPos(int64 pos)
 {
     m_Position = static_cast<size_t>(pos);
 
@@ -93,7 +93,7 @@ void FileMemory::SetPos(int64 pos)
     }
 }
 
-void FileMemory::SerializeData(const void *ptr, size_t size)
+void FileStream::SerializeData(const void *ptr, size_t size)
 {
     Hazel::DirectorySystem::WriteToFile(m_FileHandle, ptr, size);
     //fwrite(ptr, size, 1, _file.handle);
@@ -101,7 +101,7 @@ void FileMemory::SerializeData(const void *ptr, size_t size)
     m_Length = std::max(m_Position, static_cast<size_t>(m_Length + 1));
 }
 
-void FileMemory::DeserializeData(void *ptr, size_t size)
+void FileStream::DeserializeData(void *ptr, size_t size)
 {
     if (size == 0)
         THROW("size > 0 Size should not be zero");
@@ -147,18 +147,18 @@ void FileMemory::DeserializeData(void *ptr, size_t size)
     }
 }
 
-void FileMemory::FlushToFile() const
+void FileStream::FlushToFile() const
 {
     Hazel::DirectorySystem::FlushFile(m_FileHandle);
 }
 
-void FileMemory::End()
+void FileStream::End()
 {
     Hazel::DirectorySystem::CloseFile(m_FileHandle);
     m_FileHandle = INVALID_HANDLE;
 }
 
-size_t FileMemory::GetDataLength() const
+size_t FileStream::GetDataLength() const
 {
     return m_Length;
 }

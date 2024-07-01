@@ -2,7 +2,7 @@
 #include "Hazel/Core/Serialization/JsonSerializer.h"
 #include "EditorContext.h"
 #include "ProjectContext.h"
-#include "Hazel/FileSystem/FileMemory.h"
+#include "Hazel/FileSystem/FileStream.h"
 #include "Hazel/FileSystem/DirectorySystem.h"
 #include "Hazel/FileSystem/FileModes.h"
 #include "Panel/PanelController.h"
@@ -62,7 +62,7 @@ namespace HazelEditor
         //     Hazel::DirectorySystem::CreateDirectoryPath(directory.c_str());
         // }
         // 
-        // Hazel::FileMemory settingsFile(_settingsFilePath.c_str(),
+        // Hazel::FileStream settingsFile(_settingsFilePath.c_str(),
         //                                Hazel::FileOpenMode::CREATE);
         // LvOutputStream outputStream(&settingsFile);
         // 
@@ -83,7 +83,7 @@ namespace HazelEditor
     }
     void Project::LoadSettings()
     {
-    // Hazel::FileMemory settingsFile(_settingsFilePath.c_str(),
+    // Hazel::FileStream settingsFile(_settingsFilePath.c_str(),
     //                                Hazel::FileOpenMode::OPEN);
     // LvInputStream inputStream(&settingsFile);
     // 
