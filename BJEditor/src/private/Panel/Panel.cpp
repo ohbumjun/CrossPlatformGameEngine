@@ -12,7 +12,7 @@ Panel::~Panel()
 }
 void Panel::Open(Hazel::TypeId type)
 {
-    Panel *panel = lv_editor_get_window()->CreatePanel(type);
+    Panel *panel = BJ_GetEditorWindow()->CreatePanel(type);
     if (nullptr != panel)
     {
         panel->Open();

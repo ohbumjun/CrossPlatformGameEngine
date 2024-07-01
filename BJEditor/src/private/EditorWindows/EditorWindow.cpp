@@ -62,7 +62,7 @@ void EditorWindow::OpenMessagePopup(const std::string& title, const std::string&
 void EditorWindow::DisplayProgressBar(float progress,
                                     const char *title,
                                     const char *message,
-                                    const std::string &key = "")
+                                    const std::string &key)
 {
     ProgressData data(progress, title, message);
 

@@ -20,7 +20,7 @@ namespace HazelEditor
         template <typename T>
         inline T *CreatePanel()
         {
-            return (T *)CreatePanel(Hazel::Reflection::GetTypeId<T>());
+            return (T *)CreatePanel(Hazel::Reflection::GetTypeID<T>());
         }
         
         Panel *CreatePanel(const Hazel::TypeId &type);
@@ -29,10 +29,11 @@ namespace HazelEditor
         inline std::vector<T *> FindPanels()
         {
             std::vector<T *> result;
-            std::vector<Panel *> finds = FindPanels(Hazel::Reflection::GetTypeId<T>());
-            for (uint64 i = 0, max = finds.Count(); i < max; i++)
+            std::vector<Panel *> finds =
+                FindPanels(Hazel::Reflection::GetTypeID<T>());
+            for (uint64 i = 0, max = finds.size(); i < max; i++)
             {
-                result.Add((T *)finds[i]);
+                result.push_back((T *)finds[i]);
             }
             return result;
         }

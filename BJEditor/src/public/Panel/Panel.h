@@ -2,6 +2,7 @@
 
 #include "Hazel/Core/Reflection/TypeId.h"
 #include "Hazel/Core/Reflection/Reflection.h"
+#include "imgui.h"
 
 // Editor 에 있는 코드이지만, Scene 에 접근할 수 있게 하기 위해
 // 예외적으로 하나만 HazelEditor 가 아니라

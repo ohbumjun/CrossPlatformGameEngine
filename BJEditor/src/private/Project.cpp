@@ -13,7 +13,6 @@ namespace HazelEditor
 	Project::Project(const char *projectPath){};
 	Project ::~Project()
 	{
-
 	};
 
 	bool Project::IsLoaded()
@@ -83,52 +82,53 @@ namespace HazelEditor
     }
     void Project::LoadSettings()
     {
-    // Hazel::FileStream settingsFile(_settingsFilePath.c_str(),
-    //                                Hazel::FileOpenMode::OPEN);
-    // LvInputStream inputStream(&settingsFile);
-    // 
-    // const std::string settingJsonString = inputStream.ReadToEnd();
-    // 
-    // settingsFile.FlushToFile();
-    // settingsFile.End();
-    // 
-    // ProjectContext *project = BJ_GetProjectContext();
-    // 
-    // LvProjectSettings &settings = project->settings;
-    // 
-    // Hazel::JsonSerializer archive(settingJsonString.c_str());
-    // archive.Deserialize(Hazel::Reflection::GetTypeID<LvProjectSettings>(),
-    //                     &settings);
-    // 
-    // LvEngineContext *engineContext = lv_engine_get_context();
-    // engineContext->sceneGraphPath = settings.defaultSceneGraphFileName;
-    // 
-    // if (settings.windowLayoutFilePath.empty())
-    // {
-    //     settings.windowLayoutFilePath =
-    //         LvPanelController::defaultDockingLayoutPath;
-    // }
-    // 
-    // engineContext->isGPUskinning = settings.isGPUskinning;
-    // if (settings.useHDR)
-    // {
-    //     engineContext->colorRenderTextureFormat =
-    //         Render::LvPixelFormat::R16G16B16A16_SFLOAT;
-    // }
-    // else
-    // {
-    //     engineContext->colorRenderTextureFormat =
-    //         Render::LvPixelFormat::R8G8B8A8_UNORM;
-    // }
-    // engineContext->debugWireFrame = settings.debugWireFrame;
-    // engineContext->debugVertexNormal = settings.debugVertexNormal;
-    // engineContext->debugFaceNormal = settings.debugFaceNormal;
-    // engineContext->debugBone = settings.debugBone;
-    // 
-    // if (!settings.shaderCacheKey.IsEmpty())
-    // {
-    // 
-    // }
-    // 
+        // Hazel::FileStream settingsFile(_settingsFilePath.c_str(),
+        //                                Hazel::FileOpenMode::OPEN);
+        // LvInputStream inputStream(&settingsFile);
+        //
+        // const std::string settingJsonString = inputStream.ReadToEnd();
+        //
+        // settingsFile.FlushToFile();
+        // settingsFile.End();
+        //
+        // ProjectContext *project = BJ_GetProjectContext();
+        //
+        // LvProjectSettings &settings = project->settings;
+        //
+        // Hazel::JsonSerializer archive(settingJsonString.c_str());
+        // archive.Deserialize(Hazel::Reflection::GetTypeID<LvProjectSettings>(),
+        //                     &settings);
+        //
+        // LvEngineContext *engineContext = lv_engine_get_context();
+        // engineContext->sceneGraphPath = settings.defaultSceneGraphFileName;
+        //
+        // if (settings.windowLayoutFilePath.empty())
+        // {
+        //     settings.windowLayoutFilePath =
+        //         LvPanelController::defaultDockingLayoutPath;
+        // }
+        //
+        // engineContext->isGPUskinning = settings.isGPUskinning;
+        // if (settings.useHDR)
+        // {
+        //     engineContext->colorRenderTextureFormat =
+        //         Render::LvPixelFormat::R16G16B16A16_SFLOAT;
+        // }
+        // else
+        // {
+        //     engineContext->colorRenderTextureFormat =
+        //         Render::LvPixelFormat::R8G8B8A8_UNORM;
+        // }
+        // engineContext->debugWireFrame = settings.debugWireFrame;
+        // engineContext->debugVertexNormal = settings.debugVertexNormal;
+        // engineContext->debugFaceNormal = settings.debugFaceNormal;
+        // engineContext->debugBone = settings.debugBone;
+        //
+        // if (!settings.shaderCacheKey.IsEmpty())
+        // {
+        //
+        // }
+        //
+    }
 
     } // namespace HazelEditor

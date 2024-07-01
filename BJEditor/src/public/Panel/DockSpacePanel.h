@@ -21,7 +21,7 @@ public:
     DockSpacePanel(){};
     PanelController *GetPanelController() const
     {
-        return _panelController;
+        return m_PanelController;
     }
 	
     inline Hazel::TypeId GetType() const override

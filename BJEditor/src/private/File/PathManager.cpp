@@ -62,7 +62,7 @@ void PathManager::addRootPath()
 
 #ifdef UNICODE
     // 유니코드 문자열을 멀티바이트 문자열로 변환한다.
-    DirectorySystem::FromSystemToUTF8Path(pathStruct->PathMultibyte, RootPath);
+    Hazel::DirectorySystem::FromSystemToUTF8Path(pathStruct->PathMultibyte, RootPath);
     // int ConvertLength = WideCharToMultiByte(CP_ACP, 0, BinPath, -1, nullptr, 0, 0, 0);
     //
     // WideCharToMultiByte(CP_ACP, 0, BinPath, -1,

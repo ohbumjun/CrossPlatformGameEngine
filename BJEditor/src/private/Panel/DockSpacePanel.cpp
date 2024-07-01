@@ -315,8 +315,14 @@ void DockSpacePanel::drawDockingspace()
         {
             if (nullptr == BJ_GetProjectContext())
             {
+                ImVec2 calculatedPadding = ImGui::GetStyle().WindowPadding;
+                calculatedPadding.x *= 3.f;
+                calculatedPadding.y *= 3.f;
+
+                // ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImGui::GetStyle().WindowPadding * 3.f);
                 ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-                                    ImGui::GetStyle().WindowPadding * 3.f);
+                                    calculatedPadding);
+
                 ImGui::PushStyleColor(
                     ImGuiCol_ChildBg,
                     ImGui::GetStyleColorVec4(ImGuiCol_WindowBg));
@@ -390,9 +396,9 @@ void DockSpacePanel::drawDockingspace()
                         // 
                         //     ImGui::EndPopup();
                         // }
-                        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-                                            ImGui::GetStyle().WindowPadding *
-                                                3.f);
+
+                        // ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImGui::GetStyle().WindowPadding * 3.f);
+                        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, calculatedPadding);
 
                         ImGui::Spacing();
 
@@ -592,7 +598,9 @@ void DockSpacePanel::drawDockingspace()
                                     // }
                                     ImGui::PushStyleVar(
                                         ImGuiStyleVar_WindowPadding,
-                                        ImGui::GetStyle().WindowPadding * 3.f);
+                                        // ImGui::GetStyle().WindowPadding * 3.f);
+                                        calculatedPadding);
+
                                     ImGui::PushStyleColor(
                                         ImGuiCol_ChildBg,
                                         ImGui::GetStyleColorVec4(
