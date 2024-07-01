@@ -1,5 +1,6 @@
 ﻿#include "hzpch.h"
 #include "Panel/Panel.h"
+#include "EditorWindows/EditorWindow.h"
 
 namespace HazelEditor
 {
@@ -11,9 +12,20 @@ Panel::~Panel()
 }
 void Panel::Open(Hazel::TypeId type)
 {
+    Panel *panel = lv_editor_get_window()->CreatePanel(type);
+    if (nullptr != panel)
+    {
+        panel->Open();
+    }
 }
 void Panel::Initialize()
 {
+}
+void Panel::Open(bool fullscreen)
+{
+    _isOpen = true;
+
+    onOpen();
 }
 void Panel::setUniqueName(const char *format, ...)
 {

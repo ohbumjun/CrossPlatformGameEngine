@@ -25,6 +25,8 @@ public:
 
     void Initialize();
 
+    void Open(bool fullscreen = false); 
+
     // @brief 창 끄기
     void Close()
     {
@@ -82,7 +84,6 @@ protected:
     {
     }
     bool _isOpen = false;
-
 
 private:
     uint32 _type = 0;

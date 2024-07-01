@@ -50,7 +50,7 @@ Panel* EditorWindow::FindPanel(const char* name) const
 void EditorWindow::OpenMessagePopup(const std::string& title, const std::string& message)
 {
     MessagePanel *panel = CreatePanel<MessagePanel>();
-    panel->Open(title.c_str(), message.c_str());
+    panel->Open(title.c_str(), message.c_str(), [](int empty){});
 }
 void EditorWindow::DisplayProgressBar(float progress,
                                     const char *title,
@@ -138,7 +138,7 @@ void EditorWindow::onOpen()
 
     if (useDockSpace)
     {
-        LvDockSpacePanel *dockSpace = CreatePanel<LvDockSpacePanel>();
+        DockSpacePanel *dockSpace = CreatePanel<DockSpacePanel>();
         dockSpace->Open();
         _panelController = dockSpace->GetPanelController();
     }
@@ -187,7 +187,7 @@ void EditorWindow::onPrepareGUI()
     //     io.DeltaTime = LV_EPS;
     // }
 
-    contextTime = currentTime;
+    // contextTime = currentTime;
 
     GuiWindow::onPrepareGUI();
 
