@@ -31,31 +31,31 @@ void BaseWindow::Update(float deltaTime)
     prepare(deltaTime);
     onGUI();
 }
-inline void BaseWindow::onInit()
+void BaseWindow::onInit()
+{
+} 
+void BaseWindow::onUpdate(float deltatime)
 {
 }
-inline void BaseWindow::onUpdate(float deltatime)
+void BaseWindow::onOpen()
 {
 }
-inline void BaseWindow::onOpen()
+void BaseWindow::onClose()
 {
 }
-inline void BaseWindow::onClose()
+void BaseWindow::onGUI()
 {
 }
-inline void BaseWindow::onGUI()
+void BaseWindow::onPrepare(float deltaTime)
 {
 }
-inline void BaseWindow::onPrepare(float deltaTime)
+void BaseWindow::onRender(float deltaTime)
 {
 }
-inline void BaseWindow::onRender(float deltaTime)
+void BaseWindow::onNextFrame()
 {
 }
-inline void BaseWindow::onNextFrame()
-{
-}
-inline void BaseWindow::onPresent()
+void BaseWindow::onPresent()
 {
 }
 void BaseWindow::prepare(float deltaTime)

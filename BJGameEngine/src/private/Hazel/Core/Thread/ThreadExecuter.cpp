@@ -4,7 +4,6 @@
 #include "Hazel/Utils/TimeStep.h"
 #include "Hazel/Utils/TimeUtil.h"
 
-
 namespace Hazel
 {
 

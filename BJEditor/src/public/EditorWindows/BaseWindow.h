@@ -23,23 +23,23 @@ namespace HazelEditor
         // Editor Run Method
         virtual void Update(float deltaTime);
     protected:
-        inline virtual void onInit();
+        virtual void onInit();
 
-        inline virtual void onUpdate(float deltatime);
+        virtual void onUpdate(float deltatime);
 
-        inline virtual void onOpen();
+        virtual void onOpen();
 
-        inline virtual void onClose();
+        virtual void onClose();
 
-        inline virtual void onGUI();
+        virtual void onGUI();
 
-        inline virtual void onPrepare(float deltaTime);
+        virtual void onPrepare(float deltaTime);
 
-        inline virtual void onRender(float deltaTime);
+        virtual void onRender(float deltaTime);
 
-        inline virtual void onNextFrame();
+        virtual void onNextFrame();
 
-        inline virtual void onPresent();
+        virtual void onPresent();
         
 	    void prepare(float deltaTime);
 

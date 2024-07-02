@@ -11,7 +11,7 @@ static int64 count = 0;
 MenuNode *MenuNode::Create(const char *rootName)
 {
     uint64 rootNameLength = nullptr != rootName ? strlen(rootName) : 0;
-    void *menuNodePtr = Hazel::BJ_EngineAllocate(sizeof(MenuNode));
+    void *menuNodePtr = Hazel::EngineAllocator::BJ_EngineAllocate(sizeof(MenuNode));
     MenuNode *root = new (menuNodePtr) MenuNode("root");
 
     std::vector<std::string> itemNameBuffer;
@@ -56,7 +56,7 @@ void MenuNode::Destroy(MenuNode *node)
     // LV_LOG(warning, "[Free] %u / %s", --count, node->name.c_str());
     node->~MenuNode();
 
-    Hazel::BJ_EngineFree(node);
+    Hazel::EngineAllocator::BJ_EngineFree(node);
 }
 
 
@@ -78,7 +78,7 @@ void MenuNode::AddMenuItem(const char *name)
     if (firstSlashIndex == -1)
     {
         // name parameter에 slash가 없는 경우
-        children.push_back(new (Hazel::BJ_EngineAllocate(
+        children.push_back(new (Hazel::EngineAllocator::BJ_EngineAllocate(
             sizeof(MenuNode))) MenuNode(name));
     }
     else
@@ -103,7 +103,8 @@ void MenuNode::AddMenuItem(const char *name)
         {
             std::string currentName;
             currentName.append(name, 0, firstSlashIndex);
-            node = new (Hazel::BJ_EngineAllocate(sizeof(MenuNode))) MenuNode(std::move(currentName));
+            node = new (Hazel::EngineAllocator::BJ_EngineAllocate(
+                sizeof(MenuNode))) MenuNode(std::move(currentName));
             // LV_LOG(warning, "[Alloc] %u / %s", ++count, node->name.c_str());
             children.push_back(node);
         }

@@ -12,7 +12,7 @@ namespace HazelEditor
 {
 EditorWindow *s_EditorWindow = nullptr;
 
-EditorWindow *BJ_GetEditorWindow()
+EditorWindow *EditorWindow::BJ_GetEditorWindow()
 {
     return nullptr;
 }

@@ -25,7 +25,7 @@ class Thread;
 *                         Main()을 통해 메인 쓰레드에 예약
 * 
  */
-class ThreadExecuterManager
+class HAZEL_API ThreadExecuterManager
 {
 
     struct ExecuterTask
@@ -129,8 +129,6 @@ public:
 
     static uint64 CreateExecuter(const char *description);
 
-    ThreadExecuterManager(const char *description = "");
-
 private:
 
     static std::unordered_map<uint64, ThreadExecuter *> _threadExecuters;
@@ -142,7 +140,6 @@ private:
     static void runExecuterTask(void *argThreadId);
 
     ThreadExecuterManager(uint64 id);
-
 
     static ThreadHandle *m_MainThreadHandle;
     static uint64 m_MainExecuterId;

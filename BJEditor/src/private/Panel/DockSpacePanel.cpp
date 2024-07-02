@@ -23,8 +23,9 @@ void DockSpacePanel::onInitialize()
                    ImGuiWindowFlags_NoBringToFrontOnFocus |
                    ImGuiWindowFlags_NoNavFocus;
 
-    void* panelControllerPtr = Hazel::BJ_EngineAllocate(sizeof(PanelController));
-    m_PanelController = new (panelControllerPtr) PanelController(BJ_GetEditorWindow());
+    void *panelControllerPtr =
+        Hazel::EngineAllocator::BJ_EngineAllocate(sizeof(PanelController));
+    m_PanelController = new (panelControllerPtr) PanelController(EditorWindow::BJ_GetEditorWindow());
     m_StatustBarText = "";
 }
 void DockSpacePanel::onGUI()
@@ -41,7 +42,7 @@ void DockSpacePanel::onDestroy()
 {
     MenuNode::Destroy(m_RootMenu);
     m_PanelController->~PanelController();
-    Hazel::BJ_EngineFree(m_PanelController);
+    Hazel::EngineAllocator::BJ_EngineFree(m_PanelController);
 }
 void DockSpacePanel::drawControll()
 {

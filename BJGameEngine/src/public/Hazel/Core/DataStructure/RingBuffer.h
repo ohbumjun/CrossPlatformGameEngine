@@ -1,13 +1,13 @@
 #pragma once
 
-#include "hzpch.h"
-#include "Hazel/Core/Allocation/Allocator/DefaultHeapAllocator.h"
 #include "Hazel/Core/Allocation/Allocator/GeneralAllocator.h"
 #include "Hazel/Core/Thread/ThreadUtil.h"
+
 namespace Hazel
 {
-template <typename T, typename TAllocator = AlignedAllocator<T>>
-class HAZEL_API RingBuffer
+template <typename T>
+// class HAZEL_API RingBuffer
+class RingBuffer
 {
 public:
     RingBuffer() : m_Capacity(10)
@@ -16,20 +16,13 @@ public:
         Reserve(m_Capacity);
     }
 
-
     RingBuffer(size_t capacity) : m_Capacity(capacity)
     {
         m_Lock = ThreadUtils::CreateCritSect();
         Reserve(capacity);
     }
 
-    ~RingBuffer()
-    {
-        Clear();
-        m_Allocator.Free(m_Data);
-        m_Data = nullptr;
-        ThreadUtils::DestroyCritSect(m_Lock);
-    }
+    ~RingBuffer();
 
     inline void Reserve(size_t capacity)
     {
@@ -159,7 +152,7 @@ public:
 
 private:
     T *m_Data;
-    TAllocator m_Allocator;
+    AlignedAllocator<T> m_Allocator;
 
     size_t m_Count = 0;
     size_t m_Capacity = 0;
@@ -169,7 +162,7 @@ private:
 
 
     CRIC_SECT *m_Lock;
-    inline virtual void grow()
+    inline void grow()
     {
         size_t prev = m_Capacity;
 
@@ -194,26 +187,12 @@ private:
         }
     }
 };
-} // namespace Hazel
-
-/*
-template<typename T, size_t InlineCapacity>
-class LvFixedRingBuffer : public LvRingBuffer<T, LvFiniteAllocator<T, InlineCapacity>>
+template <typename T>
+inline RingBuffer<T>::~RingBuffer()
 {
-	typedef LvRingBuffer<T, LvFiniteAllocator<T, InlineCapacity>> Base;
-
-public:
-
-	LvFixedRingBuffer()
-		: Base(InlineCapacity)
-	{
-
-	}
-
-private:
-
-	LV_FORCEINLINE void grow() override
-	{
-	}
-};
-*/
+    Clear();
+    m_Allocator.Free(m_Data);
+    m_Data = nullptr;
+    ThreadUtils::DestroyCritSect(m_Lock);
+}
+} // namespace Hazel

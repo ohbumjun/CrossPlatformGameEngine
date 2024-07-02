@@ -14,6 +14,7 @@ namespace HazelEditor
 	class EditorWindow : public GuiWindow
 	{
     public:
+        static EditorWindow *BJ_GetEditorWindow();
         
         EditorWindow();
 
@@ -119,8 +120,6 @@ namespace HazelEditor
 
         ProgressData _lastProgressData;
 	};
-
-EditorWindow *BJ_GetEditorWindow();
 
     };
 
