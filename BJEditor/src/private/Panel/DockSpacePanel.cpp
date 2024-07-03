@@ -25,7 +25,8 @@ void DockSpacePanel::onInitialize()
 
     void *panelControllerPtr =
         Hazel::EngineAllocator::BJ_EngineAllocate(sizeof(PanelController));
-    m_PanelController = new (panelControllerPtr) PanelController(EditorWindow::BJ_GetEditorWindow());
+    // m_PanelController = new (panelControllerPtr) PanelController(EditorWindow::BJ_GetEditorWindow());
+    m_PanelController = new (panelControllerPtr) PanelController();
     m_StatustBarText = "";
 }
 void DockSpacePanel::onGUI()

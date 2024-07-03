@@ -1,28 +1,28 @@
-#include "hzpch.h"
-#include "EditorWindows/EditorWindow.h"
-#include "Panel/PanelController.h"
-#include "Panel/DockSpacePanel.h"
-#include "imgui.h"
-#include "Hazel/Core/Thread/ThreadUtil.h"
+#include "GuiProcessors/EditorGuiProcessor.h"
 #include "Hazel/Core/Thread/ThreadExecuter.h"
-#include "ProjectContext.h"
+#include "Hazel/Core/Thread/ThreadUtil.h"
+#include "Panel/DockSpacePanel.h"
+#include "Panel/PanelController.h"
 #include "Project.h"
+#include "ProjectContext.h"
+#include "hzpch.h"
+#include "imgui.h"
 
 namespace HazelEditor
 {
-EditorWindow *s_EditorWindow = nullptr;
+EditorGuiProcessr *s_EditorGuiProcessr = nullptr;
 
-EditorWindow *EditorWindow::BJ_GetEditorWindow()
+EditorGuiProcessr *EditorGuiProcessr::BJ_GetEditorGuiProcessr()
 {
     return nullptr;
 }
 
-EditorWindow::EditorWindow()
+EditorGuiProcessr::EditorGuiProcessr()
 {
-    s_EditorWindow = this;
+    s_EditorGuiProcessr = this;
 }
 
-Panel* EditorWindow::CreatePanel(const Hazel::TypeId& type)
+Panel *EditorGuiProcessr::CreatePanel(const Hazel::TypeId &type)
 {
     bool created = false;
     Panel *result = nullptr;
@@ -44,25 +44,26 @@ Panel* EditorWindow::CreatePanel(const Hazel::TypeId& type)
 
     return result;
 }
-std::vector<Panel*> EditorWindow::FindPanels(const Hazel::TypeId& type) const
+std::vector<Panel *> EditorGuiProcessr::FindPanels(const Hazel::TypeId &type) const
 {
     return _panelController->FindPanels(type);
 }
 
-Panel* EditorWindow::FindPanel(const char* name) const
+Panel *EditorGuiProcessr::FindPanel(const char *name) const
 {
     return _panelController->FindPanel(name);
 }
 
-void EditorWindow::OpenMessagePopup(const std::string& title, const std::string& message)
+void EditorGuiProcessr::OpenMessagePopup(const std::string &title,
+                                    const std::string &message)
 {
     MessagePanel *panel = CreatePanel<MessagePanel>();
-    panel->Open(title.c_str(), message.c_str(), [](int empty){});
+    panel->Open(title.c_str(), message.c_str(), [](int empty) {});
 }
-void EditorWindow::DisplayProgressBar(float progress,
-                                    const char *title,
-                                    const char *message,
-                                    const std::string &key)
+void EditorGuiProcessr::DisplayProgressBar(float progress,
+                                      const char *title,
+                                      const char *message,
+                                      const std::string &key)
 {
     ProgressData data(progress, title, message);
 
@@ -86,8 +87,8 @@ void EditorWindow::DisplayProgressBar(float progress,
     _lastProgressData = data;
 }
 
-void EditorWindow::ClearProgressBar(const std::string &key)
-{ 
+void EditorGuiProcessr::ClearProgressBar(const std::string &key)
+{
     if (Hazel::ThreadUtils::IsCurrentMainThread())
     {
         updateProgressBar(ProgressData::Close());
@@ -101,12 +102,12 @@ void EditorWindow::ClearProgressBar(const std::string &key)
     _progressQueue.Enqueue(ProgressData::Close());
 }
 
-void EditorWindow::onInit()
+void EditorGuiProcessr::onInit()
 {
-    GuiWindow::onInit();
+    GuiProcessor::onInit();
 }
 
-void EditorWindow::onUpdate(float deltatime)
+void EditorGuiProcessr::onUpdate(float deltatime)
 {
     // LV_CHECK(_engine->renderer != nullptr, "Engine renderer is nullptr");
 
@@ -132,14 +133,14 @@ void EditorWindow::onUpdate(float deltatime)
     // }
 }
 
-void EditorWindow::onOpen()
+void EditorGuiProcessr::onOpen()
 {
     // LV_CHECK_MAIN_THREAD();
 
     _mutex = Hazel::ThreadUtils::CreateCritSect();
 
-    // _panelController = _editorWindowPanelController = new PanelController(this);
-    _panelController =  new PanelController();
+    // _panelController = _EditorGuiProcessrPanelController = new PanelController(this);
+    _panelController = new PanelController();
 
     bool useDockSpace = true;
 
@@ -151,7 +152,7 @@ void EditorWindow::onOpen()
     }
 }
 
-void EditorWindow::onClose()
+void EditorGuiProcessr::onClose()
 {
     if (Project::IsLoaded())
     {
@@ -163,30 +164,30 @@ void EditorWindow::onClose()
     Hazel::ThreadUtils::DestroyCritSect(_mutex);
 }
 
-void EditorWindow::onPrepareGUI()
+void EditorGuiProcessr::onPrepareGUI()
 {
     // LV_PROFILE_EDITOR();
     // ImGuiContext *context = static_cast<ImGuiContext *>(_guiContext);
     // ImGuiIO &io = context->IO;
-    // 
+    //
     // io.DisplaySize.x = static_cast<float>(GetWidth());
     // io.DisplaySize.y = static_cast<float>(GetHeight());
-    // 
+    //
     // int fx, fy;
     // lv_window_get_framebuffer_size(_handle, &fx, &fy);
-    // 
+    //
     // io.DisplayFramebufferScale.x =
     //     static_cast<float>(fx) / static_cast<float>(GetWidth());
     // io.DisplayFramebufferScale.y =
     //     static_cast<float>(fy) / static_cast<float>(GetHeight());
-    // 
+    //
     // io.MousePos = ImVec2(-LV_FLT_MAX, -LV_FLT_MAX);
     // memset(io.MouseDown, 0, sizeof(io.MouseDown));
-    // 
+    //
     // const uint32 time = lv_time_milli();
     // const float currentTime = static_cast<float>(time) / 1000.f;
     // static float contextTime = 0.f;
-    // 
+    //
     // io.DeltaTime =
     //     contextTime > 0.0f ? (currentTime - contextTime) : (1.0f / 60.0f);
     // if (io.DeltaTime <= 0.0f)
@@ -196,20 +197,20 @@ void EditorWindow::onPrepareGUI()
 
     // contextTime = currentTime;
 
-    GuiWindow::onPrepareGUI();
+    GuiProcessor::onPrepareGUI();
 
     ImGui::NewFrame();
-    }
+}
 
-void EditorWindow::onFinishGUI()
-    {
+void EditorGuiProcessr::onFinishGUI()
+{
     // LV_PROFILE_EDITOR();
     ImGui::Render();
-    };
+};
 
-void EditorWindow::onGUI()
-    {
-    GuiWindow::onGUI();
+void EditorGuiProcessr::onGUI()
+{
+    GuiProcessor::onGUI();
 
     while (_progressQueue.Count())
     {
@@ -224,18 +225,18 @@ void EditorWindow::onGUI()
     {
         _panelController->Draw();
     }
-    };
+};
 
-void EditorWindow::onNextFrame()
+void EditorGuiProcessr::onNextFrame()
 {
     //Base::onNextFrame();
     if (_presentable)
     {
-       // _submitIndex = _renderContext->GetSubmitIndex(_surface->swapchain);
-       // _context.renderer->NextFrame(
-       //     _surface->swapchain); //editor에서 추가한 renderPath 모두 설정
-       // _engine->renderer->NextFrame(_surface->swapchain);
-       // LvSceneGraphInternal::NextFrame();
+        // _submitIndex = _renderContext->GetSubmitIndex(_surface->swapchain);
+        // _context.renderer->NextFrame(
+        //     _surface->swapchain); //editor에서 추가한 renderPath 모두 설정
+        // _engine->renderer->NextFrame(_surface->swapchain);
+        // LvSceneGraphInternal::NextFrame();
     }
 
     for (size_t i = 0; i < _childs.size(); ++i)
@@ -244,7 +245,7 @@ void EditorWindow::onNextFrame()
     }
 }
 
-void EditorWindow::updateProgressBar(const ProgressData &data)
+void EditorGuiProcessr::updateProgressBar(const ProgressData &data)
 {
     if (data.show)
     {
@@ -267,5 +268,4 @@ void EditorWindow::updateProgressBar(const ProgressData &data)
     }
 }
 
-};
-
+}; // namespace HazelEditor

@@ -11,13 +11,13 @@
 // Hazel Editor Namespace 로 설정한다.
 namespace HazelEditor
 {
-class EditorWindow;
+// class EditorWindow;
 class PanelController
 {
 public:
-    PanelController(EditorWindow *editorWindow);
+    // PanelController(EditorWindow *editorWindow);
+    PanelController();
     ~PanelController();
-
     
 	template <typename T>
     T *CreatePanel()
@@ -50,7 +50,7 @@ private:
     uint64 makeUniquePanelId(Hazel::TypeId type);
     Panel *addPanel(Panel *panel, const uint32 &monoType);
 	
-    EditorWindow *_editorWindow;
+    // EditorWindow *_editorWindow;
     std::unordered_map<Hazel::TypeId, uint32> _panelCountTable;
     std::unordered_map<uint64, Panel *> _panels;
     std::stack<Panel *> _panelStack;

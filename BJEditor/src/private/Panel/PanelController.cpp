@@ -8,9 +8,10 @@
 // Hazel Editor Namespace 로 설정한다.
 namespace HazelEditor
 {
-PanelController::PanelController(EditorWindow *editorWindow)
+// PanelController::PanelController(EditorWindow *editorWindow)
+PanelController::PanelController()
 {
-    _editorWindow = editorWindow;
+    // _editorWindow = editorWindow;
 }
 PanelController::~PanelController()
 {
