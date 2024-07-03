@@ -19,6 +19,10 @@ void BaseWindow::NextFrame()
 {
     onNextFrame();
 }
+void BaseWindow::EndFrame()
+{
+    onEndFrame();
+}
 void BaseWindow::Present()
 {
     onPresent();
@@ -38,6 +42,9 @@ void BaseWindow::onUpdate(float deltatime)
 {
 }
 void BaseWindow::onOpen()
+{
+}
+void BaseWindow::onEndFrame()
 {
 }
 void BaseWindow::onClose()

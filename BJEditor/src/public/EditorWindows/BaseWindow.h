@@ -14,12 +14,17 @@ namespace HazelEditor
 
         void Close();
 
+        // @brief Update 전에 호출되는 함수
         void NextFrame();
+
+        // @brief Frame 을 정리해주는 함수
+        void EndFrame();
 
         void Present();
 
         // Editor Run Method
         virtual void PeekEvent();
+
         // Editor Run Method
         virtual void Update(float deltaTime);
     protected:
@@ -28,6 +33,8 @@ namespace HazelEditor
         virtual void onUpdate(float deltatime);
 
         virtual void onOpen();
+
+        virtual void onEndFrame();
 
         virtual void onClose();
 
